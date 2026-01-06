@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Home, DollarSign, ShoppingCart, Bell, CheckCircle } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  'https://yrgasnkcwawhijkvqfqs.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyZ2Fzbmtjd2F3aGlqa3ZxZnFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4OTIxNzQsImV4cCI6MjA4MjQ2ODE3NH0.cTmDo1w-u63jn9-PopQaC_WXAfgViDH81Anmay_q50o'
+);
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('tasks');
@@ -29,27 +35,91 @@ const App = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [currentMonth, setCurrentMonth] = useState('January 2026');
   const [choreHistory, setChoreHistory] = useState([]);
+  const [loaded, setLoaded] = useState(false);
 
   const roommates = ['Elle', 'Ember', 'Eva', 'Illari'];
   const colors = { Ember: 'bg-orange-200 text-orange-800', Eva: 'bg-green-200 text-green-800', Elle: 'bg-blue-200 text-blue-800', Illari: 'bg-purple-200 text-purple-800' };
 
-  const save = async (updates) => {
-    const data = { bills, items, monthlyChores, oneOffTasks, events, activity, currentMonth, choreHistory, ...updates };
+  // Load data from Supabase on mount
+  useEffect(() => {
+    loadData();
+    
+    // Subscribe to real-time changes
+    const channel = supabase
+      .channel('household_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'household_data' },
+        () => loadData()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const loadData = async () => {
     try {
-      await window.storage.set('household-data', JSON.stringify(data), true);
-    } catch(e) {}
+      const { data, error } = await supabase
+        .from('household_data')
+        .select('*')
+        .eq('key', 'app_data')
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading data:', error);
+        setLoaded(true);
+        return;
+      }
+
+      if (data && data.value) {
+        const parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+        setBills(parsed.bills || []);
+        setItems(parsed.items || items);
+        setMonthlyChores(parsed.monthlyChores || monthlyChores);
+        setOneOffTasks(parsed.oneOffTasks || []);
+        setEvents(parsed.events || []);
+        setActivity(parsed.activity || []);
+        setCurrentMonth(parsed.currentMonth || 'January 2026');
+        setChoreHistory(parsed.choreHistory || []);
+      }
+    } catch (e) {
+      console.error('Failed to load data:', e);
+    }
+    setLoaded(true);
+  };
+
+  const saveData = async (updates = {}) => {
+    const data = { bills, items, monthlyChores, oneOffTasks, events, activity, currentMonth, choreHistory, ...updates };
+    
+    try {
+      const { error } = await supabase
+        .from('household_data')
+        .upsert({ 
+          key: 'app_data', 
+          value: JSON.stringify(data)
+        }, {
+          onConflict: 'key'
+        });
+
+      if (error) {
+        console.error('Error saving data:', error);
+      }
+    } catch (e) {
+      console.error('Failed to save data:', e);
+    }
   };
 
   const addActivity = (msg) => {
     const newActivity = [{ id: Date.now(), msg, time: new Date().toISOString() }, ...activity];
     setActivity(newActivity);
-    save({ activity: newActivity });
+    saveData({ activity: newActivity });
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 pb-20 flex justify-center">
-      <div className="w-full max-w-4xl p-4">
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+      <div className="w-full max-w-4xl px-6 py-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
           <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
             <Home className="text-purple-600" />
             Queerio House Hub
@@ -57,14 +127,14 @@ const App = () => {
           <p className="text-gray-600">Elle, Ember, Eva & Illari's Home</p>
         </div>
 
-        {activeTab === 'bills' && <Bills bills={bills} setBills={setBills} save={save} addActivity={addActivity} />}
-        {activeTab === 'items' && <Items items={items} setItems={setItems} save={save} addActivity={addActivity} colors={colors} selectedItem={selectedItem} setSelectedItem={setSelectedItem} />}
-        {activeTab === 'tasks' && <Tasks monthlyChores={monthlyChores} setMonthlyChores={setMonthlyChores} oneOffTasks={oneOffTasks} setOneOffTasks={setOneOffTasks} save={save} addActivity={addActivity} colors={colors} roommates={roommates} showForm={showForm} setShowForm={setShowForm} selectedItem={selectedItem} setSelectedItem={setSelectedItem} currentMonth={currentMonth} choreHistory={choreHistory} setChoreHistory={setChoreHistory} />}
-        {activeTab === 'events' && <Events events={events} setEvents={setEvents} save={save} addActivity={addActivity} showForm={showForm} setShowForm={setShowForm} />}
+        {activeTab === 'bills' && <Bills bills={bills} setBills={setBills} saveData={saveData} addActivity={addActivity} />}
+        {activeTab === 'items' && <Items items={items} setItems={setItems} saveData={saveData} addActivity={addActivity} colors={colors} selectedItem={selectedItem} setSelectedItem={setSelectedItem} />}
+        {activeTab === 'tasks' && <Tasks monthlyChores={monthlyChores} setMonthlyChores={setMonthlyChores} oneOffTasks={oneOffTasks} setOneOffTasks={setOneOffTasks} saveData={saveData} addActivity={addActivity} colors={colors} roommates={roommates} showForm={showForm} setShowForm={setShowForm} selectedItem={selectedItem} setSelectedItem={setSelectedItem} currentMonth={currentMonth} choreHistory={choreHistory} setChoreHistory={setChoreHistory} />}
+        {activeTab === 'events' && <Events events={events} setEvents={setEvents} saveData={saveData} addActivity={addActivity} showForm={showForm} setShowForm={setShowForm} />}
         {activeTab === 'activity' && <Activity activity={activity} />}
 
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
-          <div className="max-w-4xl mx-auto flex justify-around p-2">
+          <div className="max-w-4xl mx-auto flex justify-center gap-4 p-4">
             {[
               { id: 'bills', icon: DollarSign, label: 'Bills' },
               { id: 'items', icon: ShoppingCart, label: 'Items' },
@@ -72,7 +142,7 @@ const App = () => {
               { id: 'events', icon: Home, label: 'Events' },
               { id: 'activity', icon: Bell, label: 'Activity' }
             ].map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center p-2 rounded-lg ${activeTab === tab.id ? 'text-purple-600 bg-purple-50' : 'text-gray-600'}`}>
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center px-6 py-3 rounded-lg ${activeTab === tab.id ? 'text-purple-600 bg-purple-50' : 'text-gray-600'}`}>
                 <tab.icon size={24} />
                 <span className="text-xs mt-1">{tab.label}</span>
               </button>
@@ -84,7 +154,7 @@ const App = () => {
   );
 };
 
-const Bills = ({ bills, setBills, save, addActivity }) => {
+const Bills = ({ bills, setBills, saveData, addActivity }) => {
   const [show, setShow] = useState(false);
   const [cat, setCat] = useState('');
   const [amt, setAmt] = useState('');
@@ -95,7 +165,7 @@ const Bills = ({ bills, setBills, save, addActivity }) => {
     const newBill = { id: Date.now(), category: cat, amount: parseFloat(amt) || 0, dueDate: due, paid: false };
     const updated = [...bills, newBill];
     setBills(updated);
-    save({ bills: updated });
+    saveData({ bills: updated });
     addActivity(`New ${cat} bill added${cat !== 'Rent' ? `: $${amt}` : ''}`);
     setCat(''); setAmt(''); setDue(''); setShow(false);
   };
@@ -103,17 +173,17 @@ const Bills = ({ bills, setBills, save, addActivity }) => {
   const markPaid = (id) => {
     const updated = bills.map(b => b.id === id ? { ...b, paid: true, paidDate: new Date().toISOString() } : b);
     setBills(updated);
-    save({ bills: updated });
+    saveData({ bills: updated });
   };
 
   const del = (id) => {
     const updated = bills.filter(b => b.id !== id);
     setBills(updated);
-    save({ bills: updated });
+    saveData({ bills: updated });
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white rounded-lg shadow-lg p-8">
       <div className="flex justify-between mb-4">
         <h2 className="text-2xl font-bold">Bills & Expenses</h2>
         <button onClick={() => setShow(true)} className="px-4 py-2 bg-purple-600 text-white rounded-lg">+ Add Bill</button>
@@ -160,20 +230,20 @@ const Bills = ({ bills, setBills, save, addActivity }) => {
   );
 };
 
-const Items = ({ items, setItems, save, addActivity, colors, selectedItem, setSelectedItem }) => {
+const Items = ({ items, setItems, saveData, addActivity, colors, selectedItem, setSelectedItem }) => {
   const purchase = (itemId, person) => {
     const item = items.find(i => i.id === itemId);
     const idx = item.rotation.indexOf(person);
     const updated = items.map(i => i.id === itemId ? { ...i, currentIndex: idx } : i);
     setItems(updated);
-    save({ items: updated });
+    saveData({ items: updated });
     addActivity(`${person} purchased ${item.name}`);
     setSelectedItem(null);
   };
 
   if (selectedItem) {
     return (
-      <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="bg-white rounded-lg shadow-lg p-8">
         <h2 className="text-2xl font-bold mb-4">Mark Item as Purchased</h2>
         <p className="text-center mb-6">Who purchased <span className="font-bold text-purple-600">{selectedItem.name}</span>?</p>
         <div className="space-y-2 max-w-xs mx-auto">
@@ -187,7 +257,7 @@ const Items = ({ items, setItems, save, addActivity, colors, selectedItem, setSe
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white rounded-lg shadow-lg p-8">
       <h2 className="text-2xl font-bold mb-4">Household Items</h2>
       <div className="space-y-3">
         {items.map(item => {
@@ -211,19 +281,17 @@ const Items = ({ items, setItems, save, addActivity, colors, selectedItem, setSe
   );
 };
 
-const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, save, addActivity, colors, roommates, showForm, setShowForm, selectedItem, setSelectedItem, currentMonth, choreHistory, setChoreHistory }) => {
+const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, saveData, addActivity, colors, roommates, showForm, setShowForm, selectedItem, setSelectedItem, currentMonth, choreHistory, setChoreHistory }) => {
   const [title, setTitle] = useState('');
   const [assignee, setAssignee] = useState('');
   const [due, setDue] = useState('');
-  const [showHistory, setShowHistory] = useState(false);
-  const [savedPeople, setSavedPeople] = useState([]);
 
   const assignChore = (choreId, person) => {
     const updated = monthlyChores.map(c => 
       c.id === choreId ? { ...c, rotation: [person] } : c
     );
     setMonthlyChores(updated);
-    save({ monthlyChores: updated });
+    saveData({ monthlyChores: updated });
     addActivity(`${person} assigned to ${monthlyChores.find(c => c.id === choreId).name}`);
   };
 
@@ -262,7 +330,7 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
     const person = chore.rotation[0];
     const updated = monthlyChores.map(c => c.id === choreId ? { ...c, rotation: [] } : c);
     setMonthlyChores(updated);
-    save({ monthlyChores: updated });
+    saveData({ monthlyChores: updated });
     addActivity(`${person} completed ${chore.name}`);
     setSelectedItem(null);
   };
@@ -272,7 +340,7 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
     const newTask = { id: Date.now(), title, assignedTo: assignee, dueDate: due, completed: false };
     const updated = [...oneOffTasks, newTask];
     setOneOffTasks(updated);
-    save({ oneOffTasks: updated });
+    saveData({ oneOffTasks: updated });
     addActivity(`New task: ${title} assigned to ${assignee}`);
     setTitle(''); setAssignee(''); setDue(''); setShowForm(null);
   };
@@ -280,18 +348,18 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
   const toggle = (id) => {
     const updated = oneOffTasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
     setOneOffTasks(updated);
-    save({ oneOffTasks: updated });
+    saveData({ oneOffTasks: updated });
   };
 
   const del = (id) => {
     const updated = oneOffTasks.filter(t => t.id !== id);
     setOneOffTasks(updated);
-    save({ oneOffTasks: updated });
+    saveData({ oneOffTasks: updated });
   };
 
   if (selectedItem) {
     return (
-      <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="bg-white rounded-lg shadow-lg p-8">
         <h2 className="text-2xl font-bold mb-4">Mark Chore Complete</h2>
         <p className="text-center mb-6">Complete <span className="font-bold text-purple-600">{selectedItem.name}</span>?</p>
         <div className="flex gap-2 justify-center">
@@ -304,7 +372,7 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="bg-white rounded-lg shadow-lg p-8">
         <div className="flex justify-between items-center mb-4">
           <div>
             <h2 className="text-2xl font-bold">Monthly Chores</h2>
@@ -313,8 +381,7 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
           <button onClick={() => { 
             const cleared = monthlyChores.map(c => ({ ...c, rotation: [] }));
             setMonthlyChores(cleared);
-            save({ monthlyChores: cleared });
-            setSavedPeople([]);
+            saveData({ monthlyChores: cleared });
             addActivity('Chores cleared for ' + currentMonth);
           }} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
             Clear All
@@ -372,7 +439,7 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="bg-white rounded-lg shadow-lg p-8">
         <div className="flex justify-between mb-4">
           <h2 className="text-2xl font-bold">One-Time Tasks</h2>
           <button onClick={() => setShowForm('task')} className="px-4 py-2 bg-purple-600 text-white rounded-lg">+ Add Task</button>
@@ -414,7 +481,7 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
   );
 };
 
-const Events = ({ events, setEvents, save, addActivity, showForm, setShowForm }) => {
+const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowForm }) => {
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
@@ -426,7 +493,7 @@ const Events = ({ events, setEvents, save, addActivity, showForm, setShowForm })
     const newEvent = { id: Date.now(), title, date, time, description: desc, link };
     const updated = [...events, newEvent];
     setEvents(updated);
-    save({ events: updated });
+    saveData({ events: updated });
     addActivity(`New event: ${title}`);
     setTitle(''); setDate(''); setTime(''); setDesc(''); setLink(''); setShowForm(null);
   };
@@ -434,13 +501,13 @@ const Events = ({ events, setEvents, save, addActivity, showForm, setShowForm })
   const del = (id) => {
     const updated = events.filter(e => e.id !== id);
     setEvents(updated);
-    save({ events: updated });
+    saveData({ events: updated });
   };
 
   const upcoming = events.filter(e => new Date(e.date) >= new Date()).sort((a, b) => new Date(a.date) - new Date(b.date));
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white rounded-lg shadow-lg p-8">
       <div className="flex justify-between mb-4">
         <h2 className="text-2xl font-bold">Events</h2>
         <button onClick={() => setShowForm('event')} className="px-4 py-2 bg-purple-600 text-white rounded-lg">+ Add Event</button>
@@ -466,7 +533,8 @@ const Events = ({ events, setEvents, save, addActivity, showForm, setShowForm })
             <div className="flex justify-between">
               <div>
                 <h3 className="font-bold">{e.title}</h3>
-                <p className="text-sm">{new Date(e.date).toLocaleDateString()}{e.time && ` at ${e.time}`}</p>
+                <p className="text-sm">{new Date(e.date).toLocaleDateString()}{e.time && `
+at ${e.time}`}</p>
                 {e.description && <p className="text-sm mt-1">{e.description}</p>}
                 {e.link && <a href={e.link} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 underline">Link</a>}
               </div>
@@ -483,7 +551,7 @@ const Activity = ({ activity }) => {
   const recentActivity = activity.slice(0, 20);
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white rounded-lg shadow-lg p-8">
       <h2 className="text-2xl font-bold mb-4">Activity</h2>
       {recentActivity.length === 0 ? (
         <p className="text-center text-gray-500 py-8">No recent activity</p>
