@@ -118,7 +118,7 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 pb-20 flex justify-center">
-      <div className="w-full max-w-4xl px-6 py-4">
+      <div className="w-full max-w-4xl px-8 py-6">
         <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
           <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
             <Home className="text-purple-600" />
@@ -134,7 +134,7 @@ const App = () => {
         {activeTab === 'activity' && <Activity activity={activity} />}
 
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
-          <div className="max-w-4xl mx-auto flex justify-center gap-4 p-4">
+          <div className="max-w-4xl mx-auto flex justify-center items-center gap-8 px-8 py-4">
             {[
               { id: 'bills', icon: DollarSign, label: 'Bills' },
               { id: 'items', icon: ShoppingCart, label: 'Items' },
@@ -159,19 +159,46 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
   const [cat, setCat] = useState('');
   const [amt, setAmt] = useState('');
   const [due, setDue] = useState('');
+  const [recurring, setRecurring] = useState(false);
 
   const add = () => {
-    if (!cat || !due || (cat !== 'Rent' && !amt)) return;
-    const newBill = { id: Date.now(), category: cat, amount: parseFloat(amt) || 0, dueDate: due, paid: false };
+    if (!cat || !due) return;
+    const newBill = { 
+      id: Date.now(), 
+      category: cat, 
+      amount: amt ? parseFloat(amt) : null, 
+      dueDate: due, 
+      paid: false,
+      recurring: recurring
+    };
     const updated = [...bills, newBill];
     setBills(updated);
     saveData({ bills: updated });
-    addActivity(`New ${cat} bill added${cat !== 'Rent' ? `: $${amt}` : ''}`);
-    setCat(''); setAmt(''); setDue(''); setShow(false);
+    const amountText = amt ? `: $${amt}` : ' (amount TBD)';
+    const recurringText = recurring ? ' (recurring)' : '';
+    addActivity(`New ${cat} bill added${amountText}${recurringText}`);
+    setCat(''); setAmt(''); setDue(''); setRecurring(false); setShow(false);
   };
 
   const markPaid = (id) => {
+    const bill = bills.find(b => b.id === id);
     const updated = bills.map(b => b.id === id ? { ...b, paid: true, paidDate: new Date().toISOString() } : b);
+    
+    // If recurring, create a new unpaid bill for next month
+    if (bill.recurring) {
+      const nextDueDate = new Date(bill.dueDate);
+      nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+      const newBill = {
+        id: Date.now(),
+        category: bill.category,
+        amount: bill.amount,
+        dueDate: nextDueDate.toISOString().split('T')[0],
+        paid: false,
+        recurring: true
+      };
+      updated.push(newBill);
+    }
+    
     setBills(updated);
     saveData({ bills: updated });
   };
@@ -182,50 +209,103 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
     saveData({ bills: updated });
   };
 
+  const unpaidBills = bills.filter(b => !b.paid).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+  const paidBills = bills.filter(b => b.paid).sort((a, b) => new Date(b.paidDate) - new Date(a.paidDate));
+
   return (
-    <div className="bg-white rounded-lg shadow-lg p-8">
-      <div className="flex justify-between mb-4">
+    <div className="bg-white rounded-lg shadow-lg p-10">
+      <div className="flex justify-between mb-6">
         <h2 className="text-2xl font-bold">Bills & Expenses</h2>
-        <button onClick={() => setShow(true)} className="px-4 py-2 bg-purple-600 text-white rounded-lg">+ Add Bill</button>
+        <button onClick={() => setShow(true)} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">+ Add Bill</button>
       </div>
 
       {show && (
-        <div className="mb-4 p-4 bg-purple-50 rounded-lg">
-          <select value={cat} onChange={(e) => setCat(e.target.value)} className="w-full p-2 border rounded mb-2">
+        <div className="mb-6 p-6 bg-purple-50 rounded-lg">
+          <select value={cat} onChange={(e) => setCat(e.target.value)} className="w-full p-3 border rounded mb-3">
             <option value="">Select category...</option>
-            {['Rent', 'Internet', 'PG&E', 'Waste Management', 'Water'].map(c => <option key={c} value={c}>{c}</option>)}
+            {['Rent', 'Internet', 'PG&E', 'Waste Management', 'Water', 'Other'].map(c => <option key={c} value={c}>{c}</option>)}
           </select>
-          {cat !== 'Rent' && <input type="number" value={amt} onChange={(e) => setAmt(e.target.value)} placeholder="Amount" className="w-full p-2 border rounded mb-2" />}
-          <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className="w-full p-2 border rounded mb-2" />
+          <input 
+            type="number" 
+            value={amt} 
+            onChange={(e) => setAmt(e.target.value)} 
+            placeholder="Amount (optional)" 
+            className="w-full p-3 border rounded mb-3" 
+          />
+          <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className="w-full p-3 border rounded mb-3" />
+          <label className="flex items-center gap-2 mb-4 cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={recurring} 
+              onChange={(e) => setRecurring(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <span className="text-sm font-medium">Recurring monthly bill</span>
+          </label>
           <div className="flex gap-2">
-            <button onClick={add} className="flex-1 bg-purple-600 text-white p-2 rounded">Add</button>
-            <button onClick={() => setShow(false)} className="bg-gray-300 p-2 rounded">Cancel</button>
+            <button onClick={add} className="flex-1 bg-purple-600 text-white p-3 rounded hover:bg-purple-700">Add</button>
+            <button onClick={() => { setShow(false); setCat(''); setAmt(''); setDue(''); setRecurring(false); }} className="bg-gray-300 p-3 rounded hover:bg-gray-400">Cancel</button>
           </div>
         </div>
       )}
 
-      <div className="space-y-2">
-        {bills.map(b => (
-          <div key={b.id} className={`p-4 rounded-lg border-2 ${b.paid ? 'bg-green-50 border-green-300' : 'bg-gray-50 border-gray-200'}`}>
-            <div className="flex justify-between">
-              <div>
-                <h3 className="font-bold">{b.category}</h3>
-                <p className="text-sm">Due: {new Date(b.dueDate).toLocaleDateString()}</p>
-                {b.paid && <span className="text-xs bg-green-200 px-2 py-1 rounded">Paid</span>}
-              </div>
-              <div className="text-right">
-                {b.category !== 'Rent' && <p className="text-xl font-bold text-purple-600">${b.amount}</p>}
-                {!b.paid && (
-                  <div className="space-x-2">
-                    <button onClick={() => markPaid(b.id)} className="px-2 py-1 bg-green-600 text-white text-sm rounded">Paid</button>
-                    <button onClick={() => del(b.id)} className="px-2 py-1 bg-red-500 text-white text-sm rounded">Delete</button>
+      {unpaidBills.length > 0 && (
+        <>
+          <h3 className="text-lg font-semibold mb-3 text-gray-700">Unpaid Bills</h3>
+          <div className="space-y-3 mb-6">
+            {unpaidBills.map(b => (
+              <div key={b.id} className="p-5 rounded-lg border-2 bg-gray-50 border-gray-200">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-lg">{b.category}</h3>
+                      {b.recurring && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Recurring</span>}
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">Due: {new Date(b.dueDate).toLocaleDateString()}</p>
                   </div>
-                )}
+                  <div className="text-right">
+                    {b.amount !== null && <p className="text-xl font-bold text-purple-600 mb-2">${b.amount}</p>}
+                    {b.amount === null && <p className="text-sm text-gray-500 mb-2">Amount TBD</p>}
+                    <div className="space-x-2">
+                      <button onClick={() => markPaid(b.id)} className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">Mark Paid</button>
+                      <button onClick={() => del(b.id)} className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600">Delete</button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
+
+      {paidBills.length > 0 && (
+        <>
+          <h3 className="text-lg font-semibold mb-3 text-gray-700">Paid Bills</h3>
+          <div className="space-y-3">
+            {paidBills.map(b => (
+              <div key={b.id} className="p-5 rounded-lg border-2 bg-green-50 border-green-300">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold">{b.category}</h3>
+                      <span className="text-xs bg-green-200 px-2 py-1 rounded">Paid</span>
+                    </div>
+                    <p className="text-sm text-gray-600">Paid on: {new Date(b.paidDate).toLocaleDateString()}</p>
+                  </div>
+                  <div className="text-right">
+                    {b.amount !== null && <p className="text-xl font-bold text-gray-600">${b.amount}</p>}
+                    <button onClick={() => del(b.id)} className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 mt-2">Delete</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {bills.length === 0 && (
+        <p className="text-center text-gray-500 py-8">No bills yet. Add one to get started!</p>
+      )}
     </div>
   );
 };
@@ -243,7 +323,7 @@ const Items = ({ items, setItems, saveData, addActivity, colors, selectedItem, s
 
   if (selectedItem) {
     return (
-      <div className="bg-white rounded-lg shadow-lg p-8">
+      <div className="bg-white rounded-lg shadow-lg p-10">
         <h2 className="text-2xl font-bold mb-4">Mark Item as Purchased</h2>
         <p className="text-center mb-6">Who purchased <span className="font-bold text-purple-600">{selectedItem.name}</span>?</p>
         <div className="space-y-2 max-w-xs mx-auto">
@@ -257,7 +337,7 @@ const Items = ({ items, setItems, saveData, addActivity, colors, selectedItem, s
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-8">
+    <div className="bg-white rounded-lg shadow-lg p-10">
       <h2 className="text-2xl font-bold mb-4">Household Items</h2>
       <div className="space-y-3">
         {items.map(item => {
@@ -359,7 +439,7 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
 
   if (selectedItem) {
     return (
-      <div className="bg-white rounded-lg shadow-lg p-8">
+      <div className="bg-white rounded-lg shadow-lg p-10">
         <h2 className="text-2xl font-bold mb-4">Mark Chore Complete</h2>
         <p className="text-center mb-6">Complete <span className="font-bold text-purple-600">{selectedItem.name}</span>?</p>
         <div className="flex gap-2 justify-center">
@@ -372,7 +452,7 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-lg p-8">
+      <div className="bg-white rounded-lg shadow-lg p-10">
         <div className="flex justify-between items-center mb-4">
           <div>
             <h2 className="text-2xl font-bold">Monthly Chores</h2>
@@ -439,7 +519,7 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-lg p-8">
+      <div className="bg-white rounded-lg shadow-lg p-10">
         <div className="flex justify-between mb-4">
           <h2 className="text-2xl font-bold">One-Time Tasks</h2>
           <button onClick={() => setShowForm('task')} className="px-4 py-2 bg-purple-600 text-white rounded-lg">+ Add Task</button>
@@ -507,7 +587,7 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
   const upcoming = events.filter(e => new Date(e.date) >= new Date()).sort((a, b) => new Date(a.date) - new Date(b.date));
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-8">
+    <div className="bg-white rounded-lg shadow-lg p-10">
       <div className="flex justify-between mb-4">
         <h2 className="text-2xl font-bold">Events</h2>
         <button onClick={() => setShowForm('event')} className="px-4 py-2 bg-purple-600 text-white rounded-lg">+ Add Event</button>
@@ -551,7 +631,7 @@ const Activity = ({ activity }) => {
   const recentActivity = activity.slice(0, 20);
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-8">
+    <div className="bg-white rounded-lg shadow-lg p-10">
       <h2 className="text-2xl font-bold mb-4">Activity</h2>
       {recentActivity.length === 0 ? (
         <p className="text-center text-gray-500 py-8">No recent activity</p>
