@@ -119,7 +119,7 @@ const App = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 pb-20 flex justify-center">
       <div className="w-full max-w-4xl px-12 py-8">
-        <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
+        <div className="bg-white rounded-lg shadow-lg p-12 mb-8">
           <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
             <Home className="text-purple-600" />
             Queerio House Hub
@@ -213,7 +213,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
   const paidBills = bills.filter(b => b.paid).sort((a, b) => new Date(b.paidDate) - new Date(a.paidDate));
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-12">
+    <div className="bg-white rounded-lg shadow-lg p-16">
       <div className="flex justify-between mb-6">
         <h2 className="text-2xl font-bold">Bills & Expenses</h2>
         <button onClick={() => setShow(true)} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">+ Add Bill</button>
@@ -254,7 +254,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
           <h3 className="text-lg font-semibold mb-3 text-gray-700">Unpaid Bills</h3>
           <div className="space-y-3 mb-6">
             {unpaidBills.map(b => (
-              <div key={b.id} className="p-5 rounded-lg border-2 bg-gray-50 border-gray-200">
+              <div key={b.id} className="p-6 rounded-lg border-2 bg-gray-50 border-gray-200">
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="flex items-center gap-2">
@@ -283,7 +283,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
           <h3 className="text-lg font-semibold mb-3 text-gray-700">Paid Bills</h3>
           <div className="space-y-3">
             {paidBills.map(b => (
-              <div key={b.id} className="p-5 rounded-lg border-2 bg-green-50 border-green-300">
+              <div key={b.id} className="p-6 rounded-lg border-2 bg-green-50 border-green-300">
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="flex items-center gap-2">
@@ -323,7 +323,7 @@ const Items = ({ items, setItems, saveData, addActivity, colors, selectedItem, s
 
   if (selectedItem) {
     return (
-      <div className="bg-white rounded-lg shadow-lg p-12">
+      <div className="bg-white rounded-lg shadow-lg p-16">
         <h2 className="text-2xl font-bold mb-4">Mark Item as Purchased</h2>
         <p className="text-center mb-6">Who purchased <span className="font-bold text-purple-600">{selectedItem.name}</span>?</p>
         <div className="space-y-2 max-w-xs mx-auto">
@@ -337,7 +337,7 @@ const Items = ({ items, setItems, saveData, addActivity, colors, selectedItem, s
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-12">
+    <div className="bg-white rounded-lg shadow-lg p-16">
       <h2 className="text-2xl font-bold mb-4">Household Items</h2>
       <div className="space-y-3">
         {items.map(item => {
@@ -439,7 +439,7 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
 
   if (selectedItem) {
     return (
-      <div className="bg-white rounded-lg shadow-lg p-12">
+      <div className="bg-white rounded-lg shadow-lg p-16">
         <h2 className="text-2xl font-bold mb-4">Mark Chore Complete</h2>
         <p className="text-center mb-6">Complete <span className="font-bold text-purple-600">{selectedItem.name}</span>?</p>
         <div className="flex gap-2 justify-center">
@@ -452,7 +452,7 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-lg p-12">
+      <div className="bg-white rounded-lg shadow-lg p-16">
         <div className="flex justify-between items-center mb-4">
           <div>
             <h2 className="text-2xl font-bold">Monthly Chores</h2>
@@ -519,7 +519,7 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-lg p-12">
+      <div className="bg-white rounded-lg shadow-lg p-16">
         <div className="flex justify-between mb-4">
           <h2 className="text-2xl font-bold">One-Time Tasks</h2>
           <button onClick={() => setShowForm('task')} className="px-4 py-2 bg-purple-600 text-white rounded-lg">+ Add Task</button>
@@ -587,7 +587,7 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
   const upcoming = events.filter(e => new Date(e.date) >= new Date()).sort((a, b) => new Date(a.date) - new Date(b.date));
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-12">
+    <div className="bg-white rounded-lg shadow-lg p-16">
       <div className="flex justify-between mb-4">
         <h2 className="text-2xl font-bold">Events</h2>
         <button onClick={() => setShowForm('event')} className="px-4 py-2 bg-purple-600 text-white rounded-lg">+ Add Event</button>
@@ -631,7 +631,7 @@ const Activity = ({ activity }) => {
   const recentActivity = activity.slice(0, 20);
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-12">
+    <div className="bg-white rounded-lg shadow-lg p-16">
       <h2 className="text-2xl font-bold mb-4">Activity</h2>
       {recentActivity.length === 0 ? (
         <p className="text-center text-gray-500 py-8">No recent activity</p>
