@@ -160,6 +160,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
   const [amt, setAmt] = useState('');
   const [due, setDue] = useState('');
   const [recurring, setRecurring] = useState(false);
+  const [recurrenceType, setRecurrenceType] = useState('monthly');
 
   const add = () => {
     if (!cat || !due) return;
@@ -169,32 +170,79 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
       amount: amt ? parseFloat(amt) : null, 
       dueDate: due, 
       paid: false,
-      recurring: recurring
+      recurring: recurring,
+      recurrenceType: recurring ? recurrenceType : null
     };
     const updated = [...bills, newBill];
     setBills(updated);
     saveData({ bills: updated });
     const amountText = amt ? `: $${amt}` : ' (amount TBD)';
-    const recurringText = recurring ? ' (recurring)' : '';
+    const recurringText = recurring ? ` (recurring ${recurrenceType})` : '';
     addActivity(`New ${cat} bill added${amountText}${recurringText}`);
-    setCat(''); setAmt(''); setDue(''); setRecurring(false); setShow(false);
+    setCat(''); 
+    setAmt(''); 
+    setDue(''); 
+    setRecurring(false); 
+    setRecurrenceType('monthly');
+    setShow(false);
+  };
+
+  const calculateNextDueDate = (currentDueDate, recurrenceType) => {
+    const nextDate = new Date(currentDueDate);
+    
+    switch(recurrenceType) {
+      case 'weekly':
+        nextDate.setDate(nextDate.getDate() + 7);
+        break;
+      case 'biweekly':
+        nextDate.setDate(nextDate.getDate() + 14);
+        break;
+      case 'monthly':
+        nextDate.setMonth(nextDate.getMonth() + 1);
+        break;
+      case 'quarterly':
+        nextDate.setMonth(nextDate.getMonth() + 3);
+        break;
+      case 'semiannually':
+        nextDate.setMonth(nextDate.getMonth() + 6);
+        break;
+      case 'yearly':
+        nextDate.setFullYear(nextDate.getFullYear() + 1);
+        break;
+      default:
+        nextDate.setMonth(nextDate.getMonth() + 1);
+    }
+    
+    return nextDate.toISOString().split('T')[0];
+  };
+
+  const getRecurrenceLabel = (type) => {
+    const labels = {
+      'weekly': 'Weekly',
+      'biweekly': 'Bi-weekly',
+      'monthly': 'Monthly',
+      'quarterly': 'Quarterly',
+      'semiannually': 'Semi-annually',
+      'yearly': 'Yearly'
+    };
+    return labels[type] || type;
   };
 
   const markPaid = (id) => {
     const bill = bills.find(b => b.id === id);
     const updated = bills.map(b => b.id === id ? { ...b, paid: true, paidDate: new Date().toISOString() } : b);
     
-    // If recurring, create a new unpaid bill for next month
-    if (bill.recurring) {
-      const nextDueDate = new Date(bill.dueDate);
-      nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+    // If recurring, create a new unpaid bill based on recurrence type
+    if (bill.recurring && bill.recurrenceType) {
+      const nextDueDate = calculateNextDueDate(bill.dueDate, bill.recurrenceType);
       const newBill = {
         id: Date.now(),
         category: bill.category,
         amount: bill.amount,
-        dueDate: nextDueDate.toISOString().split('T')[0],
+        dueDate: nextDueDate,
         paid: false,
-        recurring: true
+        recurring: true,
+        recurrenceType: bill.recurrenceType
       };
       updated.push(newBill);
     }
@@ -233,18 +281,42 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
             className="w-full p-3 border rounded mb-3" 
           />
           <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className="w-full p-3 border rounded mb-3" />
-          <label className="flex items-center gap-2 mb-4 cursor-pointer">
+          
+          <label className="flex items-center gap-2 mb-3 cursor-pointer">
             <input 
               type="checkbox" 
               checked={recurring} 
               onChange={(e) => setRecurring(e.target.checked)}
               className="w-4 h-4"
             />
-            <span className="text-sm font-medium">Recurring monthly bill</span>
+            <span className="text-sm font-medium">Recurring bill</span>
           </label>
+
+          {recurring && (
+            <select 
+              value={recurrenceType} 
+              onChange={(e) => setRecurrenceType(e.target.value)} 
+              className="w-full p-3 border rounded mb-4"
+            >
+              <option value="weekly">Weekly</option>
+              <option value="biweekly">Bi-weekly (every 2 weeks)</option>
+              <option value="monthly">Monthly</option>
+              <option value="quarterly">Quarterly (every 3 months)</option>
+              <option value="semiannually">Semi-annually (every 6 months)</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          )}
+
           <div className="flex gap-2">
             <button onClick={add} className="flex-1 bg-purple-600 text-white p-3 rounded hover:bg-purple-700">Add</button>
-            <button onClick={() => { setShow(false); setCat(''); setAmt(''); setDue(''); setRecurring(false); }} className="bg-gray-300 p-3 rounded hover:bg-gray-400">Cancel</button>
+            <button onClick={() => { 
+              setShow(false); 
+              setCat(''); 
+              setAmt(''); 
+              setDue(''); 
+              setRecurring(false); 
+              setRecurrenceType('monthly');
+            }} className="bg-gray-300 p-3 rounded hover:bg-gray-400">Cancel</button>
           </div>
         </div>
       )}
@@ -259,7 +331,11 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold text-lg">{b.category}</h3>
-                      {b.recurring && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Recurring</span>}
+                      {b.recurring && (
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                          {getRecurrenceLabel(b.recurrenceType)}
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-gray-600 mt-1">Due: {new Date(b.dueDate).toLocaleDateString()}</p>
                   </div>
@@ -289,6 +365,11 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold">{b.category}</h3>
                       <span className="text-xs bg-green-200 px-2 py-1 rounded">Paid</span>
+                      {b.recurring && (
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                          {getRecurrenceLabel(b.recurrenceType)}
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-gray-600">Paid on: {new Date(b.paidDate).toLocaleDateString()}</p>
                   </div>
