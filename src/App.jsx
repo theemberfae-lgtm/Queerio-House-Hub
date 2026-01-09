@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Home, DollarSign, ShoppingCart, Bell, CheckCircle } from 'lucide-react';
+import { Home, DollarSign, ShoppingCart, Bell, CheckCircle, Users } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './AuthContext';
+import Login from './Login';
+import Signup from './Signup';
+import AdminUsers from './AdminUsers';
 
 const supabase = createClient(
   'https://yrgasnkcwawhijkvqfqs.supabase.co',
@@ -8,6 +13,7 @@ const supabase = createClient(
 );
 
 const App = () => {
+  const { profile, signOut, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('tasks');
   const [bills, setBills] = useState([]);
   const [items, setItems] = useState([
@@ -116,15 +122,31 @@ const App = () => {
     saveData({ activity: newActivity });
   };
 
-  return (
+return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 pb-20 flex justify-center">
       <div className="w-full max-w-6xl px-16 py-8">
         <div className="bg-white rounded-lg shadow-lg px-16 py-12 mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-            <Home className="text-purple-600" />
-            Queerio House Hub
-          </h1>
-          <p className="text-gray-600">Elle, Ember, Eva & Illari's Home</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
+                <Home className="text-purple-600" />
+                Queerio House Hub
+              </h1>
+              <p className="text-gray-600">Elle, Ember, Eva & Illari's Home</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="font-semibold">{profile?.name}</p>
+                {isAdmin && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Admin</span>}
+              </div>
+              <button 
+                onClick={() => signOut()} 
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
         </div>
 
         {activeTab === 'bills' && <Bills bills={bills} setBills={setBills} saveData={saveData} addActivity={addActivity} />}
@@ -132,6 +154,7 @@ const App = () => {
         {activeTab === 'tasks' && <Tasks monthlyChores={monthlyChores} setMonthlyChores={setMonthlyChores} oneOffTasks={oneOffTasks} setOneOffTasks={setOneOffTasks} saveData={saveData} addActivity={addActivity} colors={colors} roommates={roommates} showForm={showForm} setShowForm={setShowForm} selectedItem={selectedItem} setSelectedItem={setSelectedItem} currentMonth={currentMonth} choreHistory={choreHistory} setChoreHistory={setChoreHistory} />}
         {activeTab === 'events' && <Events events={events} setEvents={setEvents} saveData={saveData} addActivity={addActivity} showForm={showForm} setShowForm={setShowForm} />}
         {activeTab === 'activity' && <Activity activity={activity} />}
+        {activeTab === 'admin' && <AdminUsers />}
 
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg flex justify-center">
           <div className="flex justify-center items-center gap-12 px-8 py-4">
@@ -140,7 +163,8 @@ const App = () => {
               { id: 'items', icon: ShoppingCart, label: 'Items' },
               { id: 'tasks', icon: CheckCircle, label: 'Tasks' },
               { id: 'events', icon: Home, label: 'Events' },
-              { id: 'activity', icon: Bell, label: 'Activity' }
+              { id: 'activity', icon: Bell, label: 'Activity' },
+              ...(isAdmin ? [{ id: 'admin', icon: Users, label: 'Admin' }] : [])
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center px-6 py-3 rounded-lg ${activeTab === tab.id ? 'text-purple-600 bg-purple-50' : 'text-gray-600'}`}>
                 <tab.icon size={24} />
@@ -730,4 +754,45 @@ const Activity = ({ activity }) => {
   );
 };
 
-export default App;
+// Add this AFTER your existing App component, REPLACE the export default App line
+
+const ProtectedRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 flex items-center justify-center">
+        <div className="text-2xl font-bold text-purple-600">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+
+  return children;
+};
+
+const AppWrapper = () => {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route 
+            path="/" 
+            element={
+              <ProtectedRoute>
+                <App />
+              </ProtectedRoute>
+            } 
+          />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
+  );
+};
+
+export default AppWrapper;
