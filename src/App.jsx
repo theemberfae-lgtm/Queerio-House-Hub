@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Home, DollarSign, ShoppingCart, Bell, CheckCircle, Users } from 'lucide-react';
+import { Home, DollarSign, ShoppingCart, Bell, CheckCircle, Users, User, Settings } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './AuthContext';
 import Login from './Login';
 import Signup from './Signup';
 import AdminUsers from './AdminUsers';
+import PersonalDashboard from './PersonalDashboard';
+import UserProfile from './UserProfile';
 
 const supabase = createClient(
   'https://yrgasnkcwawhijkvqfqs.supabase.co',
@@ -14,7 +16,7 @@ const supabase = createClient(
 
 const App = () => {
   const { profile, signOut, isAdmin } = useAuth();
-  const [activeTab, setActiveTab] = useState('tasks');
+const [activeTab, setActiveTab] = useState('dashboard'); // changed from 'tasks'
   const [bills, setBills] = useState([]);
   const [items, setItems] = useState([
     { id: 'handsoap', name: 'Hand Soap', rotation: ['Eva', 'Elle', 'Illari', 'Ember'], currentIndex: 2 },
@@ -149,23 +151,25 @@ return (
           </div>
         </div>
 
+        {activeTab === 'dashboard' && <PersonalDashboard bills={bills} items={items} events={events} oneOffTasks={oneOffTasks} />}
+        {activeTab === 'profile' && <UserProfile />}
         {activeTab === 'bills' && <Bills bills={bills} setBills={setBills} saveData={saveData} addActivity={addActivity} />}
         {activeTab === 'items' && <Items items={items} setItems={setItems} saveData={saveData} addActivity={addActivity} colors={colors} selectedItem={selectedItem} setSelectedItem={setSelectedItem} />}
         {activeTab === 'tasks' && <Tasks monthlyChores={monthlyChores} setMonthlyChores={setMonthlyChores} oneOffTasks={oneOffTasks} setOneOffTasks={setOneOffTasks} saveData={saveData} addActivity={addActivity} colors={colors} roommates={roommates} showForm={showForm} setShowForm={setShowForm} selectedItem={selectedItem} setSelectedItem={setSelectedItem} currentMonth={currentMonth} choreHistory={choreHistory} setChoreHistory={setChoreHistory} />}
         {activeTab === 'events' && <Events events={events} setEvents={setEvents} saveData={saveData} addActivity={addActivity} showForm={showForm} setShowForm={setShowForm} />}
-        {activeTab === 'activity' && <Activity activity={activity} />}
         {activeTab === 'admin' && <AdminUsers />}
 
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg flex justify-center">
           <div className="flex justify-center items-center gap-12 px-8 py-4">
-            {[
-              { id: 'bills', icon: DollarSign, label: 'Bills' },
-              { id: 'items', icon: ShoppingCart, label: 'Items' },
-              { id: 'tasks', icon: CheckCircle, label: 'Tasks' },
-              { id: 'events', icon: Home, label: 'Events' },
-              { id: 'activity', icon: Bell, label: 'Activity' },
-              ...(isAdmin ? [{ id: 'admin', icon: Users, label: 'Admin' }] : [])
-            ].map(tab => (
+{[
+  { id: 'dashboard', icon: User, label: 'Dashboard' },
+  { id: 'bills', icon: DollarSign, label: 'Bills' },
+  { id: 'items', icon: ShoppingCart, label: 'Items' },
+  { id: 'tasks', icon: CheckCircle, label: 'Tasks' },
+  { id: 'events', icon: Home, label: 'Events' },
+  { id: 'profile', icon: Settings, label: 'Profile' },
+  ...(isAdmin ? [{ id: 'admin', icon: Users, label: 'Admin' }] : [])
+].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center px-6 py-3 rounded-lg ${activeTab === tab.id ? 'text-purple-600 bg-purple-50' : 'text-gray-600'}`}>
                 <tab.icon size={24} />
                 <span className="text-xs mt-1">{tab.label}</span>
@@ -179,36 +183,140 @@ return (
 };
 
 const Bills = ({ bills, setBills, saveData, addActivity }) => {
+  const { supabase, isAdmin } = useAuth();
   const [show, setShow] = useState(false);
   const [cat, setCat] = useState('');
   const [amt, setAmt] = useState('');
   const [due, setDue] = useState('');
+  const [splitMode, setSplitMode] = useState('percent'); // 'percent' or 'amount'
   const [recurring, setRecurring] = useState(false);
   const [recurrenceType, setRecurrenceType] = useState('monthly');
+  const [users, setUsers] = useState([]);
+  const [splits, setSplits] = useState({});
 
-  const add = () => {
+  // Load users on mount
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const loadUsers = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, name, email')
+      .order('name');
+    
+    if (!error && data) {
+      setUsers(data);
+      // Initialize equal splits
+      const equalSplit = (100 / data.length).toFixed(2);
+      const initialSplits = {};
+      data.forEach(user => {
+        initialSplits[user.id] = equalSplit;
+      });
+      setSplits(initialSplits);
+    }
+  };
+
+  const updateSplit = (userId, value) => {
+    setSplits(prev => ({
+      ...prev,
+      [userId]: value
+    }));
+  };
+
+  const getTotalSplit = () => {
+    return Object.values(splits).reduce((sum, val) => sum + parseFloat(val || 0), 0);
+  };
+
+const add = async () => {
     if (!cat || !due) return;
+    if (!amt) {
+      alert('Please enter an amount for split bills');
+      return;
+    }
+    
+    const totalSplit = getTotalSplit();
+    if (Math.abs(totalSplit - 100) > 0.01) {
+      alert(`Splits must total 100%. Currently: ${totalSplit.toFixed(2)}%`);
+      return;
+    }
+
+    const billId = Date.now();
+    
+    // Initialize payment tracking for each user
+    const payments = {};
+    Object.keys(splits).forEach(userId => {
+      payments[userId] = {
+        paid: false,
+        paidDate: null
+      };
+    });
+    
     const newBill = { 
-      id: Date.now(), 
+      id: billId, 
       category: cat, 
-      amount: amt ? parseFloat(amt) : null, 
+      amount: parseFloat(amt), 
       dueDate: due, 
-      paid: false,
+      paid: false, // Bill is paid when ALL users have paid
       recurring: recurring,
-      recurrenceType: recurring ? recurrenceType : null
+      recurrenceType: recurring ? recurrenceType : null,
+      splits: splits,
+      payments: payments // Track individual payments
     };
+    
     const updated = [...bills, newBill];
     setBills(updated);
     saveData({ bills: updated });
-    const amountText = amt ? `: $${amt}` : ' (amount TBD)';
+    
     const recurringText = recurring ? ` (recurring ${recurrenceType})` : '';
-    addActivity(`New ${cat} bill added${amountText}${recurringText}`);
+    addActivity(`New ${cat} bill added: $${amt}${recurringText}`);
+    
     setCat(''); 
     setAmt(''); 
     setDue(''); 
     setRecurring(false); 
     setRecurrenceType('monthly');
+    
+    // Reset to equal splits
+    const equalSplit = (100 / users.length).toFixed(2);
+    const resetSplits = {};
+    users.forEach(user => {
+      resetSplits[user.id] = equalSplit;
+    });
+    setSplits(resetSplits);
+    
     setShow(false);
+  };
+const markUserPaid = (billId, userId) => {
+    if (!isAdmin) return;
+    
+    const bill = bills.find(b => b.id === billId);
+    const userName = getUserName(userId);
+    
+    const updated = bills.map(b => {
+      if (b.id === billId) {
+        const newPayments = { ...b.payments };
+        newPayments[userId] = {
+          paid: true,
+          paidDate: new Date().toISOString()
+        };
+        
+        // Check if all users have paid
+        const allPaid = Object.values(newPayments).every(p => p.paid);
+        
+        return {
+          ...b,
+          payments: newPayments,
+          paid: allPaid,
+          paidDate: allPaid ? new Date().toISOString() : b.paidDate
+        };
+      }
+      return b;
+    });
+    
+    setBills(updated);
+    saveData({ bills: updated });
+    addActivity(`${userName} paid their share of ${bill.category}`);
   };
 
   const calculateNextDueDate = (currentDueDate, recurrenceType) => {
@@ -253,10 +361,12 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
   };
 
   const markPaid = (id) => {
+    if (!isAdmin) return;
+    
     const bill = bills.find(b => b.id === id);
     const updated = bills.map(b => b.id === id ? { ...b, paid: true, paidDate: new Date().toISOString() } : b);
     
-    // If recurring, create a new unpaid bill based on recurrence type
+    // If recurring, create a new unpaid bill
     if (bill.recurring && bill.recurrenceType) {
       const nextDueDate = calculateNextDueDate(bill.dueDate, bill.recurrenceType);
       const newBill = {
@@ -266,19 +376,27 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
         dueDate: nextDueDate,
         paid: false,
         recurring: true,
-        recurrenceType: bill.recurrenceType
+        recurrenceType: bill.recurrenceType,
+        splits: bill.splits // Carry over the same splits
       };
       updated.push(newBill);
     }
     
     setBills(updated);
     saveData({ bills: updated });
+    addActivity(`${bill.category} bill marked as paid`);
   };
 
   const del = (id) => {
+    if (!isAdmin) return;
     const updated = bills.filter(b => b.id !== id);
     setBills(updated);
     saveData({ bills: updated });
+  };
+
+  const getUserName = (userId) => {
+    const user = users.find(u => u.id === userId);
+    return user ? user.name : 'Unknown';
   };
 
   const unpaidBills = bills.filter(b => !b.paid).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
@@ -288,10 +406,12 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
     <div className="bg-white rounded-lg shadow-lg px-20 py-12">
       <div className="flex justify-between mb-6">
         <h2 className="text-2xl font-bold">Bills & Expenses</h2>
-        <button onClick={() => setShow(true)} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">+ Add Bill</button>
+        {isAdmin && (
+          <button onClick={() => setShow(true)} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">+ Add Bill</button>
+        )}
       </div>
 
-      {show && (
+      {show && isAdmin && (
         <div className="mb-6 p-6 bg-purple-50 rounded-lg">
           <select value={cat} onChange={(e) => setCat(e.target.value)} className="w-full p-3 border rounded mb-3">
             <option value="">Select category...</option>
@@ -301,8 +421,9 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
             type="number" 
             value={amt} 
             onChange={(e) => setAmt(e.target.value)} 
-            placeholder="Amount (optional)" 
+            placeholder="Total amount" 
             className="w-full p-3 border rounded mb-3" 
+            required
           />
           <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className="w-full p-3 border rounded mb-3" />
           
@@ -331,8 +452,109 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
             </select>
           )}
 
-          <div className="flex gap-2">
-            <button onClick={add} className="flex-1 bg-purple-600 text-white p-3 rounded hover:bg-purple-700">Add</button>
+          {/* Split Percentages */}
+         {/* Split by Amount or Percent */}
+          <div className="mt-4 p-4 bg-white rounded-lg border-2 border-purple-200">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-semibold">Split Between Roommates:</h3>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSplitMode('percent')}
+                  className={`px-3 py-1 text-sm rounded ${splitMode === 'percent' ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}
+                >
+                  By %
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSplitMode('amount')}
+                  className={`px-3 py-1 text-sm rounded ${splitMode === 'amount' ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}
+                >
+                  By $
+                </button>
+              </div>
+            </div>
+
+            {splitMode === 'percent' ? (
+              // Split by Percentage
+              <>
+                {users.map(user => (
+                  <div key={user.id} className="flex items-center justify-between mb-2">
+                    <span className="font-medium">{user.name}</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={splits[user.id] || 0}
+                        onChange={(e) => updateSplit(user.id, e.target.value)}
+                        className="w-20 p-2 border rounded text-right"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                      />
+                      <span className="text-sm">%</span>
+                      {amt && (
+                        <span className="text-sm text-gray-600 ml-2">
+                          (${((parseFloat(amt) * parseFloat(splits[user.id] || 0)) / 100).toFixed(2)})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <div className="mt-3 pt-3 border-t flex justify-between font-bold">
+                  <span>Total:</span>
+                  <span className={getTotalSplit() === 100 ? 'text-green-600' : 'text-red-600'}>
+                    {getTotalSplit().toFixed(2)}% {getTotalSplit() !== 100 && '(Must be 100%)'}
+                  </span>
+                </div>
+              </>
+            ) : (
+              // Split by Dollar Amount
+              <>
+                {users.map(user => {
+                  const userAmount = amt ? ((parseFloat(amt) * parseFloat(splits[user.id] || 0)) / 100).toFixed(2) : '0.00';
+                  return (
+                    <div key={user.id} className="flex items-center justify-between mb-2">
+                      <span className="font-medium">{user.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">$</span>
+                        <input
+                          type="number"
+                          value={userAmount}
+                          onChange={(e) => {
+                            // Calculate percentage from dollar amount
+                            const dollarAmount = parseFloat(e.target.value) || 0;
+                            const totalAmount = parseFloat(amt) || 1;
+                            const percentage = (dollarAmount / totalAmount) * 100;
+                            updateSplit(user.id, percentage.toFixed(2));
+                          }}
+                          className="w-24 p-2 border rounded text-right"
+                          min="0"
+                          max={amt || 0}
+                          step="0.01"
+                          disabled={!amt}
+                        />
+                        {amt && (
+                          <span className="text-sm text-gray-600 ml-2">
+                            ({splits[user.id]}%)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="mt-3 pt-3 border-t flex justify-between font-bold">
+                  <span>Total:</span>
+                  <span className={amt && Math.abs((parseFloat(amt) * getTotalSplit() / 100) - parseFloat(amt)) < 0.01 ? 'text-green-600' : 'text-red-600'}>
+                    ${amt ? ((parseFloat(amt) * getTotalSplit()) / 100).toFixed(2) : '0.00'} 
+                    {amt && Math.abs((parseFloat(amt) * getTotalSplit() / 100) - parseFloat(amt)) >= 0.01 && ` (Must be $${amt})`}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="flex gap-2 mt-4">
+            <button onClick={add} className="flex-1 bg-purple-600 text-white p-3 rounded hover:bg-purple-700">Add Bill</button>
             <button onClick={() => { 
               setShow(false); 
               setCat(''); 
@@ -345,35 +567,85 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
         </div>
       )}
 
-      {unpaidBills.length > 0 && (
+{unpaidBills.length > 0 && (
         <>
           <h3 className="text-lg font-semibold mb-3 text-gray-700">Unpaid Bills</h3>
           <div className="space-y-3 mb-6">
-            {unpaidBills.map(b => (
-              <div key={b.id} className="p-6 rounded-lg border-2 bg-gray-50 border-gray-200">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-lg">{b.category}</h3>
-                      {b.recurring && (
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                          {getRecurrenceLabel(b.recurrenceType)}
-                        </span>
+            {unpaidBills.map(b => {
+              // Initialize payments if they don't exist (for old bills)
+              if (!b.payments && b.splits) {
+                b.payments = {};
+                Object.keys(b.splits).forEach(userId => {
+                  b.payments[userId] = { paid: false, paidDate: null };
+                });
+              }
+              
+              return (
+                <div key={b.id} className="p-6 rounded-lg border-2 bg-gray-50 border-gray-200">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-lg">{b.category}</h3>
+                        {b.recurring && (
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                            {getRecurrenceLabel(b.recurrenceType)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">Due: {new Date(b.dueDate).toLocaleDateString()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-bold text-purple-600 mb-2">${b.amount}</p>
+                      {isAdmin && (
+                        <button onClick={() => del(b.id)} className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600">Delete</button>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">Due: {new Date(b.dueDate).toLocaleDateString()}</p>
                   </div>
-                  <div className="text-right">
-                    {b.amount !== null && <p className="text-xl font-bold text-purple-600 mb-2">${b.amount}</p>}
-                    {b.amount === null && <p className="text-sm text-gray-500 mb-2">Amount TBD</p>}
-                    <div className="space-x-2">
-                      <button onClick={() => markPaid(b.id)} className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">Mark Paid</button>
-                      <button onClick={() => del(b.id)} className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600">Delete</button>
+                  
+                  {/* Individual Payment Status */}
+                  {b.splits && b.payments && (
+                    <div className="mt-3 pt-3 border-t border-gray-300">
+                      <p className="text-sm font-semibold text-gray-700 mb-2">Payment Status:</p>
+                      <div className="space-y-2">
+                        {Object.entries(b.splits).map(([userId, percentage]) => {
+                          const userPayment = b.payments[userId] || { paid: false, paidDate: null };
+                          const userAmount = ((b.amount * percentage) / 100).toFixed(2);
+                          
+                          return (
+                            <div key={userId} className={`flex justify-between items-center p-3 rounded ${userPayment.paid ? 'bg-green-50 border border-green-200' : 'bg-white border border-gray-200'}`}>
+                              <div className="flex items-center gap-3">
+                                <div className={`w-5 h-5 rounded flex items-center justify-center ${userPayment.paid ? 'bg-green-500' : 'bg-gray-300'}`}>
+                                  {userPayment.paid && <span className="text-white text-xs">✓</span>}
+                                </div>
+                                <div>
+                                  <span className="font-medium">{getUserName(userId)}</span>
+                                  <span className="text-sm text-gray-600 ml-2">
+                                    ({percentage}% = ${userAmount})
+                                  </span>
+                                </div>
+                              </div>
+                              {isAdmin && !userPayment.paid && (
+                                <button
+                                  onClick={() => markUserPaid(b.id, userId)}
+                                  className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                                >
+                                  Mark Paid
+                                </button>
+                              )}
+                              {userPayment.paid && (
+                                <span className="text-xs text-green-600">
+                                  Paid {new Date(userPayment.paidDate).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
@@ -398,8 +670,10 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                     <p className="text-sm text-gray-600">Paid on: {new Date(b.paidDate).toLocaleDateString()}</p>
                   </div>
                   <div className="text-right">
-                    {b.amount !== null && <p className="text-xl font-bold text-gray-600">${b.amount}</p>}
-                    <button onClick={() => del(b.id)} className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 mt-2">Delete</button>
+                    <p className="text-xl font-bold text-gray-600">${b.amount}</p>
+                    {isAdmin && (
+                      <button onClick={() => del(b.id)} className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 mt-2">Delete</button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -409,7 +683,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
       )}
 
       {bills.length === 0 && (
-        <p className="text-center text-gray-500 py-8">No bills yet. Add one to get started!</p>
+        <p className="text-center text-gray-500 py-8">No bills yet. {isAdmin && 'Add one to get started!'}</p>
       )}
     </div>
   );
@@ -470,6 +744,7 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
   const [title, setTitle] = useState('');
   const [assignee, setAssignee] = useState('');
   const [due, setDue] = useState('');
+  const [showHistory, setShowHistory] = useState(false);  // ADD THIS LINE
 
   const assignChore = (choreId, person) => {
     const updated = monthlyChores.map(c => 
@@ -510,12 +785,26 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
     });
   };
 
-  const completeMonthly = (choreId) => {
+const completeMonthly = (choreId) => {
     const chore = monthlyChores.find(c => c.id === choreId);
     const person = chore.rotation[0];
+    
+    // Save to history
+    const completedChore = {
+      id: Date.now(),
+      name: chore.name,
+      assignedTo: person,
+      month: currentMonth,
+      completedDate: new Date().toISOString()
+    };
+    
+    const newHistory = [...choreHistory, completedChore];
+    
+    // Clear from current rotation
     const updated = monthlyChores.map(c => c.id === choreId ? { ...c, rotation: [] } : c);
     setMonthlyChores(updated);
-    saveData({ monthlyChores: updated });
+    setChoreHistory(newHistory);
+    saveData({ monthlyChores: updated, choreHistory: newHistory });
     addActivity(`${person} completed ${chore.name}`);
     setSelectedItem(null);
   };
@@ -542,7 +831,7 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
     saveData({ oneOffTasks: updated });
   };
 
-  if (selectedItem) {
+if (selectedItem) {
     return (
       <div className="bg-white rounded-lg shadow-lg px-20 py-12">
         <h2 className="text-2xl font-bold mb-4">Mark Chore Complete</h2>
@@ -555,6 +844,53 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
     );
   }
 
+  if (showHistory) {
+    // Group history by month
+    const historyByMonth = choreHistory.reduce((acc, chore) => {
+      if (!acc[chore.month]) {
+        acc[chore.month] = [];
+      }
+      acc[chore.month].push(chore);
+      return acc;
+    }, {});
+
+    const months = Object.keys(historyByMonth).sort().reverse();
+
+    return (
+      <div className="bg-white rounded-lg shadow-lg px-20 py-12">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">Chore History</h2>
+          <button
+            onClick={() => setShowHistory(false)}
+            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+          >
+            Back to Current
+          </button>
+        </div>
+
+        {months.length === 0 ? (
+          <p className="text-center text-gray-500 py-8">No history yet. Clear chores to save them to history.</p>
+        ) : (
+          <div className="space-y-6">
+            {months.map(month => (
+              <div key={month} className="border rounded-lg p-6 bg-gray-50">
+                <h3 className="text-xl font-bold mb-4">{month}</h3>
+                <div className="space-y-2">
+                  {historyByMonth[month].map((chore, idx) => (
+                    <div key={idx} className={`p-3 rounded flex justify-between items-center ${colors[chore.assignedTo] || 'bg-white'}`}>
+                      <span className="font-medium">{chore.name}</span>
+                      <span className="font-semibold">{chore.assignedTo}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow-lg px-20 py-12">
@@ -563,14 +899,21 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
             <h2 className="text-2xl font-bold">Monthly Chores</h2>
             <p className="text-sm text-gray-600">{currentMonth}</p>
           </div>
-          <button onClick={() => { 
-            const cleared = monthlyChores.map(c => ({ ...c, rotation: [] }));
-            setMonthlyChores(cleared);
-            saveData({ monthlyChores: cleared });
-            addActivity('Chores cleared for ' + currentMonth);
-          }} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
-            Clear All
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowHistory(true)}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            >
+              View History
+<button onClick={() => { 
+  const cleared = monthlyChores.map(c => ({ ...c, rotation: [] }));
+  setMonthlyChores(cleared);
+  saveData({ monthlyChores: cleared });
+  addActivity('Chores cleared for ' + currentMonth);
+}} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+  Clear All
+</button>
+          </div>
         </div>
         <div className="space-y-4">
           {roommates.map(person => {
@@ -664,7 +1007,6 @@ const Tasks = ({ monthlyChores, setMonthlyChores, oneOffTasks, setOneOffTasks, s
       </div>
     </div>
   );
-};
 
 const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowForm }) => {
   const [title, setTitle] = useState('');
@@ -733,16 +1075,59 @@ at ${e.time}`}</p>
 };
 
 const Activity = ({ activity }) => {
-  const recentActivity = activity.slice(0, 20);
+  const { profile, isAdmin } = useAuth();
+  
+  // Filter activity based on user
+  const getFilteredActivity = () => {
+    if (isAdmin) {
+      // Admin sees everything
+      return activity;
+    }
+    
+    // Regular users see only relevant activity
+    return activity.filter(a => {
+      const msg = a.msg.toLowerCase();
+      const userName = profile?.name?.toLowerCase() || '';
+      
+      // Show if message mentions this user's name
+      if (msg.includes(userName)) {
+        return true;
+      }
+      
+      // Show new events (everyone should know)
+      if (msg.includes('new event')) {
+        return true;
+      }
+      
+      // Show bill-related activity
+      if (msg.includes('bill')) {
+        return true;
+      }
+      
+      // Hide other people's item purchases unless it affects rotation
+      if (msg.includes('purchased') && !msg.includes(userName)) {
+        return false;
+      }
+      
+      return false;
+    });
+  };
+  
+  const filteredActivity = getFilteredActivity().slice(0, 20);
 
   return (
     <div className="bg-white rounded-lg shadow-lg px-20 py-12">
-      <h2 className="text-2xl font-bold mb-4">Activity</h2>
-      {recentActivity.length === 0 ? (
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">Activity</h2>
+        {!isAdmin && (
+          <span className="text-sm text-gray-500">Showing your activity</span>
+        )}
+      </div>
+      {filteredActivity.length === 0 ? (
         <p className="text-center text-gray-500 py-8">No recent activity</p>
       ) : (
         <div className="space-y-2">
-          {recentActivity.map(a => (
+          {filteredActivity.map(a => (
             <div key={a.id} className="p-4 bg-purple-50 rounded-lg border-l-4 border-purple-500">
               <p className="font-medium">{a.msg}</p>
               <p className="text-sm text-gray-500">{new Date(a.time).toLocaleString()}</p>
@@ -766,7 +1151,7 @@ const ProtectedRoute = ({ children }) => {
       </div>
     );
   }
-
+};
   if (!user) {
     return <Navigate to="/login" />;
   }
