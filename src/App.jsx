@@ -1007,7 +1007,7 @@ if (selectedItem) {
       </div>
     </div>
   );
-
+};
 const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowForm }) => {
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
@@ -1151,7 +1151,7 @@ const ProtectedRoute = ({ children }) => {
       </div>
     );
   }
-};
+  
   if (!user) {
     return <Navigate to="/login" />;
   }
