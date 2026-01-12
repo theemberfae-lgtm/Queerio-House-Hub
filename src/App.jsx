@@ -903,7 +903,7 @@ if (selectedItem) {
             <button
               onClick={() => setShowHistory(true)}
               className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-            >
+            ></button>
               View History
 <button onClick={() => { 
   const cleared = monthlyChores.map(c => ({ ...c, rotation: [] }));
