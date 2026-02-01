@@ -260,163 +260,165 @@ const UserProfile = () => {
   };
 
   // ========================================
-  // AQUARIUM SOUND EFFECTS
+  // REALISTIC AQUARIUM SOUND EFFECTS
   // ========================================
-  // Creates realistic underwater sounds using the Web Audio API
-  // Each sound is built from scratch using oscillators and filters
   
   const playSound = (soundName) => {
-    // Don't play if user has sounds turned off
     if (!soundEnabled) return;
     
-    // Create audio context (the "sound engine" for making sounds)
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     
     switch(soundName) {
       // ========================================
-      // BUBBLE POP - Sounds like a bubble popping
+      // BUBBLE POP - Classic "bloop" sound
       // ========================================
       case 'bubble':
-        // Create the main sound generator
         const bubbleOsc = audioContext.createOscillator();
-        // Create volume control
         const bubbleGain = audioContext.createGain();
-        // Create a filter to make it sound more "watery"
         const bubbleFilter = audioContext.createBiquadFilter();
         
-        // Set the type of wave (sine = smooth, round tone)
+        // Sine wave for smooth bubble sound
         bubbleOsc.type = 'sine';
         
-        // Start at a high pitch (1200 Hz) and quickly drop to low (300 Hz)
-        // This creates the "pop" effect
-        bubbleOsc.frequency.setValueAtTime(1200, audioContext.currentTime);
-        bubbleOsc.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.15);
+        // Quick pitch drop (1000 Hz → 150 Hz) = "BLOOP!"
+        bubbleOsc.frequency.setValueAtTime(1000, audioContext.currentTime);
+        bubbleOsc.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 0.1);
         
-        // Set up the filter to cut high frequencies (makes it sound underwater)
+        // Heavy low-pass filter for underwater effect
         bubbleFilter.type = 'lowpass';
-        bubbleFilter.frequency.value = 800;
-        bubbleFilter.Q.value = 1;
+        bubbleFilter.frequency.value = 600;
+        bubbleFilter.Q.value = 2;
         
-        // Start medium volume, fade to silent
-        bubbleGain.gain.setValueAtTime(0.25, audioContext.currentTime);
-        bubbleGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+        // Quick pop envelope
+        bubbleGain.gain.setValueAtTime(0.35, audioContext.currentTime);
+        bubbleGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
         
-        // Connect everything: oscillator -> filter -> volume -> speakers
         bubbleOsc.connect(bubbleFilter);
         bubbleFilter.connect(bubbleGain);
         bubbleGain.connect(audioContext.destination);
         
-        // Play the sound
         bubbleOsc.start();
-        bubbleOsc.stop(audioContext.currentTime + 0.15);
+        bubbleOsc.stop(audioContext.currentTime + 0.1);
         break;
         
       // ========================================
-      // SUCCESS - Sounds like gentle water chimes
+      // SUCCESS - Gentle water droplets (plink plink plink)
       // ========================================
       case 'success':
-        // This plays 3 tones in sequence, like water droplets
-        const playWaterDrop = (freq, startTime, duration) => {
+        const playDrop = (freq, startTime) => {
           const osc = audioContext.createOscillator();
           const gain = audioContext.createGain();
           const filter = audioContext.createBiquadFilter();
           
-          // Use triangle wave for a softer, more water-like tone
-          osc.type = 'triangle';
-          osc.frequency.value = freq;
+          // Sine wave for pure tone
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, startTime);
           
-          // Filter makes it sound more aquatic
+          // Slight pitch drop for "drip" effect
+          osc.frequency.exponentialRampToValueAtTime(freq * 0.8, startTime + 0.08);
+          
+          // Filter for underwater clarity
           filter.type = 'lowpass';
-          filter.frequency.value = 1500;
+          filter.frequency.value = 2000;
+          filter.Q.value = 1;
           
-          // Gentle fade in and out
-          gain.gain.setValueAtTime(0.15, startTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+          // Quick attack, gentle decay
+          gain.gain.setValueAtTime(0, startTime);
+          gain.gain.linearRampToValueAtTime(0.2, startTime + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.15);
           
           osc.connect(filter);
           filter.connect(gain);
           gain.connect(audioContext.destination);
           
           osc.start(startTime);
-          osc.stop(startTime + duration);
+          osc.stop(startTime + 0.15);
         };
         
-        // Play 3 water drops at ascending pitches (sounds cheerful!)
-        playWaterDrop(523.25, audioContext.currentTime, 0.15);        // C note
-        playWaterDrop(659.25, audioContext.currentTime + 0.12, 0.15); // E note
-        playWaterDrop(783.99, audioContext.currentTime + 0.24, 0.25); // G note
+        // Three ascending water drops
+        playDrop(800, audioContext.currentTime);
+        playDrop(1000, audioContext.currentTime + 0.12);
+        playDrop(1200, audioContext.currentTime + 0.24);
         break;
         
       // ========================================
-      // CLICK - Sounds like a gentle water splash
+      // CLICK - Short water splash
       // ========================================
       case 'click':
-        // Create white noise (sounds like rushing water/splash)
-        const bufferSize = audioContext.sampleRate * 0.1; // 0.1 seconds of sound
-        const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
-        const noiseData = noiseBuffer.getChannelData(0);
+        // Create white noise buffer
+        const clickBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.08, audioContext.sampleRate);
+        const clickData = clickBuffer.getChannelData(0);
         
-        // Fill with random values (this IS the noise)
-        for (let i = 0; i < bufferSize; i++) {
-          noiseData[i] = Math.random() * 2 - 1;
+        // Fill with noise
+        for (let i = 0; i < clickBuffer.length; i++) {
+          clickData[i] = (Math.random() * 2 - 1) * (1 - i / clickBuffer.length);
         }
         
-        // Create player for the noise
-        const noiseSource = audioContext.createBufferSource();
-        noiseSource.buffer = noiseBuffer;
+        const clickSource = audioContext.createBufferSource();
+        clickSource.buffer = clickBuffer;
         
-        // Filter to make it sound like water (not harsh static)
-        const splashFilter = audioContext.createBiquadFilter();
-        splashFilter.type = 'bandpass';  // Only allow middle frequencies through
-        splashFilter.frequency.value = 1000;
-        splashFilter.Q.value = 1;
+        // Band-pass filter for splash effect
+        const clickFilter = audioContext.createBiquadFilter();
+        clickFilter.type = 'bandpass';
+        clickFilter.frequency.value = 1500;
+        clickFilter.Q.value = 2;
         
-        // Volume control - start medium, fade quickly
-        const splashGain = audioContext.createGain();
-        splashGain.gain.setValueAtTime(0.15, audioContext.currentTime);
-        splashGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.08);
+        // Quick splash envelope
+        const clickGain = audioContext.createGain();
+        clickGain.gain.setValueAtTime(0.2, audioContext.currentTime);
+        clickGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.06);
         
-        // Connect: noise -> filter -> volume -> speakers
-        noiseSource.connect(splashFilter);
-        splashFilter.connect(splashGain);
-        splashGain.connect(audioContext.destination);
+        clickSource.connect(clickFilter);
+        clickFilter.connect(clickGain);
+        clickGain.connect(audioContext.destination);
         
-        // Play the splash
-        noiseSource.start();
-        noiseSource.stop(audioContext.currentTime + 0.1);
+        clickSource.start();
+        clickSource.stop(audioContext.currentTime + 0.08);
         break;
         
       // ========================================
-      // FISH SWIM - Gentle whoosh sound
+      // SWIM - Gentle underwater whoosh
       // ========================================
       case 'swim':
-        // Create a swooping sound like a fish swimming by
-        const swimOsc = audioContext.createOscillator();
-        const swimGain = audioContext.createGain();
+        // Create pink noise for whoosh
+        const swimBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.25, audioContext.sampleRate);
+        const swimData = swimBuffer.getChannelData(0);
+        
+        // Pink noise (lower frequencies more prominent)
+        let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+        for (let i = 0; i < swimBuffer.length; i++) {
+          const white = Math.random() * 2 - 1;
+          b0 = 0.99886 * b0 + white * 0.0555179;
+          b1 = 0.99332 * b1 + white * 0.0750759;
+          b2 = 0.96900 * b2 + white * 0.1538520;
+          b3 = 0.86650 * b3 + white * 0.3104856;
+          b4 = 0.55000 * b4 + white * 0.5329522;
+          b5 = -0.7616 * b5 - white * 0.0168980;
+          swimData[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+          swimData[i] *= (1 - i / swimBuffer.length); // Fade out
+          b6 = white * 0.115926;
+        }
+        
+        const swimSource = audioContext.createBufferSource();
+        swimSource.buffer = swimBuffer;
+        
+        // Low-pass for underwater effect
         const swimFilter = audioContext.createBiquadFilter();
-        
-        // Triangle wave for smooth sound
-        swimOsc.type = 'triangle';
-        
-        // Frequency swoops down (like a fish passing by)
-        swimOsc.frequency.setValueAtTime(400, audioContext.currentTime);
-        swimOsc.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.2);
-        
-        // Heavy filtering for underwater effect
         swimFilter.type = 'lowpass';
-        swimFilter.frequency.value = 600;
-        swimFilter.Q.value = 2;
+        swimFilter.frequency.value = 800;
+        swimFilter.Q.value = 1;
         
-        // Gentle volume fade
-        swimGain.gain.setValueAtTime(0.1, audioContext.currentTime);
+        // Gentle fade
+        const swimGain = audioContext.createGain();
+        swimGain.gain.setValueAtTime(0.15, audioContext.currentTime);
         swimGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
         
-        swimOsc.connect(swimFilter);
+        swimSource.connect(swimFilter);
         swimFilter.connect(swimGain);
         swimGain.connect(audioContext.destination);
         
-        swimOsc.start();
-        swimOsc.stop(audioContext.currentTime + 0.2);
+        swimSource.start();
+        swimSource.stop(audioContext.currentTime + 0.25);
         break;
     }
   };

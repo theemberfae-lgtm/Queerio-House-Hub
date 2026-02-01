@@ -165,137 +165,246 @@ button:active {
 }
 
 /* ============================================
-   BUBBLE ANIMATIONS - REALISTIC FLOATING BUBBLES
+   AQUARIUM DECORATIONS & ANIMATED BUBBLES
    ============================================ */
 
-/* 
-   How these bubbles work:
-   - Each bubble is a div created with CSS ::before pseudo-elements
-   - They have a highlight (white glow) to look 3D
-   - They wobble side-to-side as they float up (like real bubbles!)
-   - Different sizes and speeds make it look natural
-*/
-
-/* Create the bubble container */
-body[data-animation-level="subtle"]::after,
-body[data-animation-level="medium"]::after,
-body[data-animation-level="full"]::after {
+/* BUBBLES - Now ALWAYS visible! */
+body::after {
   content: '';
   position: fixed;
-  bottom: -150px;
+  bottom: 0;
   left: 0;
   right: 0;
   height: 100vh;
   pointer-events: none;
-  z-index: 1;
+  z-index: 9999;
   
-  /* Small bubbles */
+  /* Create visible bubbles with white gradient for shine effect */
   background-image: 
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
-    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 45%, transparent 75%),
-    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 45%, transparent 75%),
-    radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.25) 50%, transparent 80%);
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.6) 30%, rgba(128, 222, 234, 0.3) 60%, transparent 80%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.5) 30%, rgba(128, 222, 234, 0.25) 60%, transparent 80%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.4) 30%, rgba(128, 222, 234, 0.2) 60%, transparent 80%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.35) 30%, rgba(128, 222, 234, 0.15) 60%, transparent 80%);
   
   background-size: 
-    15px 15px, 12px 12px, 18px 18px,
-    30px 30px, 25px 25px,
-    45px 45px;
+    25px 25px, 
+    18px 18px, 
+    32px 32px, 
+    40px 40px;
   
   background-position: 
-    10% 120%, 40% 130%, 75% 125%,
-    25% 140%, 65% 135%,
-    50% 150%;
+    20% 100%, 
+    55% 110%, 
+    75% 105%, 
+    40% 115%;
   
   background-repeat: no-repeat;
-  opacity: 0.5;
-  animation: bubbleRiseWobble 12s ease-in-out infinite;
+  animation: bubbleFloat 20s ease-in-out infinite;
 }
 
-/* MEDIUM LEVEL: Add more bubbles for fuller effect */
+/* Turn off bubbles when animations are disabled */
+body[data-animation-level="off"]::after {
+  display: none;
+}
+
+/* Medium level - more bubbles */
 body[data-animation-level="medium"]::after {
   background-image: 
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
-    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 45%, transparent 75%),
-    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 45%, transparent 75%),
-    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 45%, transparent 75%),
-    radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.25) 50%, transparent 80%);
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.6) 30%, rgba(128, 222, 234, 0.3) 60%, transparent 80%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.5) 30%, rgba(128, 222, 234, 0.25) 60%, transparent 80%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.4) 30%, rgba(128, 222, 234, 0.2) 60%, transparent 80%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.5) 30%, rgba(128, 222, 234, 0.25) 60%, transparent 80%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.35) 30%, rgba(128, 222, 234, 0.15) 60%, transparent 80%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.45) 30%, rgba(128, 222, 234, 0.2) 60%, transparent 80%);
   
   background-size: 
-    15px 15px, 12px 12px, 18px 18px, 14px 14px,
-    30px 30px, 25px 25px, 28px 28px,
-    45px 45px;
+    25px 25px, 18px 18px, 32px 32px, 
+    22px 22px, 40px 40px, 28px 28px;
   
   background-position: 
-    10% 120%, 40% 130%, 75% 125%, 85% 128%,
-    25% 140%, 65% 135%, 55% 138%,
-    50% 150%;
+    20% 100%, 55% 110%, 75% 105%, 
+    10% 108%, 40% 115%, 88% 112%;
   
-  opacity: 0.6;
-  animation: bubbleRiseWobble 10s ease-in-out infinite;
+  animation: bubbleFloat 16s ease-in-out infinite;
 }
 
-/* FULL LEVEL: Maximum bubbles! */
+/* Full level - MAXIMUM BUBBLES! */
 body[data-animation-level="full"]::after {
   background-image: 
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
-    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 45%, transparent 75%),
-    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 45%, transparent 75%),
-    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 45%, transparent 75%),
-    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 45%, transparent 75%),
-    radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.25) 50%, transparent 80%),
-    radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.25) 50%, transparent 80%);
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.6) 30%, rgba(128, 222, 234, 0.3) 60%, transparent 80%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.5) 30%, rgba(128, 222, 234, 0.25) 60%, transparent 80%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.4) 30%, rgba(128, 222, 234, 0.2) 60%, transparent 80%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.5) 30%, rgba(128, 222, 234, 0.25) 60%, transparent 80%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.35) 30%, rgba(128, 222, 234, 0.15) 60%, transparent 80%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.45) 30%, rgba(128, 222, 234, 0.2) 60%, transparent 80%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.5) 30%, rgba(128, 222, 234, 0.25) 60%, transparent 80%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.4) 30%, rgba(128, 222, 234, 0.2) 60%, transparent 80%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.35) 30%, rgba(128, 222, 234, 0.15) 60%, transparent 80%);
   
   background-size: 
-    15px 15px, 12px 12px, 18px 18px, 14px 14px, 16px 16px, 13px 13px,
-    30px 30px, 25px 25px, 28px 28px, 32px 32px,
-    45px 45px, 40px 40px;
+    25px 25px, 18px 18px, 32px 32px, 22px 22px, 
+    40px 40px, 28px 28px, 20px 20px, 35px 35px, 26px 26px;
   
   background-position: 
-    10% 120%, 40% 130%, 75% 125%, 85% 128%, 20% 135%, 95% 122%,
-    25% 140%, 65% 135%, 55% 138%, 80% 145%,
-    50% 150%, 35% 155%;
+    20% 100%, 55% 110%, 75% 105%, 10% 108%, 
+    40% 115%, 88% 112%, 5% 120%, 65% 118%, 95% 106%;
   
-  opacity: 0.7;
-  animation: bubbleRiseWobble 8s ease-in-out infinite;
+  animation: bubbleFloat 12s ease-in-out infinite;
 }
 
-/* 
-   BUBBLE RISE ANIMATION WITH WOBBLE
-   This makes bubbles:
-   1. Move upward (translateY)
-   2. Drift left and right (translateX with sine wave pattern)
-   3. Fade out at the top
-*/
-@keyframes bubbleRiseWobble {
+/* Bubble floating animation - rises from bottom to top */
+@keyframes bubbleFloat {
   0% {
-    transform: translateY(0) translateX(0);
-    opacity: 0.5;
+    transform: translateY(0);
+    opacity: 0.8;
   }
-  25% {
-    transform: translateY(-25vh) translateX(15px);  /* Drift right */
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100vh);
+    opacity: 0;
+  }
+}
+
+/* ============================================
+   SWIMMING FISH DECORATION
+   ============================================ */
+
+/* Animated fish that swims across the screen */
+body::before {
+  content: '🐠';
+  position: fixed;
+  font-size: 48px;
+  left: -80px;
+  top: 25%;
+  pointer-events: none;
+  z-index: 9998;
+  animation: fishSwim 30s linear infinite;
+  filter: drop-shadow(3px 3px 6px rgba(0, 0, 0, 0.3));
+  opacity: 0.85;
+}
+
+/* Hide fish when animations are off */
+body[data-animation-level="off"]::before {
+  display: none;
+}
+
+@keyframes fishSwim {
+  0% {
+    left: -80px;
+    top: 25%;
+    transform: scaleX(1);
+  }
+  48% {
+    left: calc(100% + 80px);
+    top: 25%;
+  }
+  50% {
+    left: calc(100% + 80px);
+    top: 35%;
+    transform: scaleX(-1);
+  }
+  98% {
+    left: -80px;
+    top: 35%;
+  }
+  100% {
+    left: -80px;
+    top: 25%;
+    transform: scaleX(1);
+  }
+}
+
+/* ============================================
+   SEAWEED DECORATIONS AT BOTTOM CORNERS
+   ============================================ */
+
+/* Left corner seaweed */
+.min-h-screen::after {
+  content: '';
+  position: fixed;
+  bottom: 0;
+  left: 10px;
+  width: 80px;
+  height: 150px;
+  background-image: 
+    linear-gradient(8deg, transparent 35%, rgba(102, 187, 106, 0.7) 35%, rgba(102, 187, 106, 0.7) 42%, transparent 42%),
+    linear-gradient(-10deg, transparent 28%, rgba(76, 175, 80, 0.8) 28%, rgba(76, 175, 80, 0.8) 36%, transparent 36%),
+    linear-gradient(12deg, transparent 40%, rgba(129, 199, 132, 0.6) 40%, rgba(129, 199, 132, 0.6) 48%, transparent 48%);
+  background-size: 100% 100%;
+  pointer-events: none;
+  z-index: 9997;
+  animation: seaweedSway 4s ease-in-out infinite;
+}
+
+/* Right corner seaweed */
+.min-h-screen::before {
+  content: '';
+  position: fixed;
+  bottom: 0;
+  right: 10px;
+  width: 80px;
+  height: 150px;
+  background-image: 
+    linear-gradient(-8deg, transparent 35%, rgba(102, 187, 106, 0.7) 35%, rgba(102, 187, 106, 0.7) 42%, transparent 42%),
+    linear-gradient(10deg, transparent 28%, rgba(76, 175, 80, 0.8) 28%, rgba(76, 175, 80, 0.8) 36%, transparent 36%),
+    linear-gradient(-12deg, transparent 40%, rgba(129, 199, 132, 0.6) 40%, rgba(129, 199, 132, 0.6) 48%, transparent 48%);
+  background-size: 100% 100%;
+  pointer-events: none;
+  z-index: 9997;
+  animation: seaweedSway 4.5s ease-in-out infinite;
+}
+
+/* Hide seaweed when animations are off */
+body[data-animation-level="off"] .min-h-screen::before,
+body[data-animation-level="off"] .min-h-screen::after {
+  display: none;
+}
+
+@keyframes seaweedSway {
+  0%, 100% {
+    transform: skewX(0deg);
+  }
+  50% {
+    transform: skewX(5deg);
+  }
+}
+
+/* ============================================
+   CORAL ACCENTS (Small decorative elements)
+   ============================================ */
+
+/* Small coral dots scattered at bottom */
+.bg-gradient-to-br {
+  position: relative;
+}
+
+.bg-gradient-to-br::before {
+  content: '🪸';
+  position: fixed;
+  bottom: 10px;
+  left: 120px;
+  font-size: 28px;
+  pointer-events: none;
+  z-index: 9996;
+  opacity: 0.6;
+  animation: coralPulse 6s ease-in-out infinite;
+}
+
+/* Hide coral when animations are off */
+body[data-animation-level="off"] .bg-gradient-to-br::before {
+  display: none;
+}
+
+@keyframes coralPulse {
+  0%, 100% {
+    transform: scale(1);
     opacity: 0.6;
   }
   50% {
-    transform: translateY(-50vh) translateX(-10px); /* Drift left */
-    opacity: 0.7;
-  }
-  75% {
-    transform: translateY(-75vh) translateX(20px);  /* Drift right again */
-    opacity: 0.5;
-  }
-  100% {
-    transform: translateY(-100vh) translateX(0);    /* Reach top */
-    opacity: 0;  /* Fade out completely */
+    transform: scale(1.1);
+    opacity: 0.8;
   }
 }
 
