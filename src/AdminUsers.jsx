@@ -39,19 +39,16 @@ const AdminUsers = () => {
     }
   };
 
-const sendInvite = async (e) => {
+  const sendInvite = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
 
     try {
-      // Generate unique token
       const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
       
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Create invite in database
       const { error: inviteError } = await supabase
         .from('invites')
         .insert({
@@ -62,10 +59,8 @@ const sendInvite = async (e) => {
 
       if (inviteError) throw inviteError;
 
-      // Create invite link
       const inviteLink = `${window.location.origin}/signup?token=${token}&email=${encodeURIComponent(inviteEmail)}`;
       
-      // Send email via our API
       const emailResponse = await fetch('/api/send-invite', {
         method: 'POST',
         headers: {
@@ -106,7 +101,6 @@ const sendInvite = async (e) => {
   const deleteUser = async (userId) => {
     if (!confirm('Are you sure you want to remove this user?')) return;
 
-    // Delete from profiles
     const { error } = await supabase
       .from('profiles')
       .delete()
@@ -126,30 +120,33 @@ const sendInvite = async (e) => {
 
   if (!isAdmin) {
     return (
-      <div className="bg-white rounded-lg shadow-lg px-20 py-12">
+      <div className="bg-white rounded-lg shadow-lg" style={{padding: '3rem'}}>
         <p className="text-center text-gray-600">Admin access required</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Send Invite */}
-      <div className="bg-white rounded-lg shadow-lg px-20 py-12">
-        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-          <UserPlus className="text-purple-600" />
-          Invite Roommate
+    <div className="space-y-8">
+      {/* ✅ FIXED: Send Invite Section - MORE padding on TOP and LEFT */}
+      <div className="bg-white rounded-lg shadow-lg" style={{padding: '3rem', overflow: 'hidden'}}>
+        <h2 className="text-2xl font-bold flex items-center gap-2" style={{marginBottom: '2rem'}}>
+          <UserPlus className="text-purple-600" style={{flexShrink: 0}} />
+          <span style={{wordBreak: 'break-word'}}>Invite Roommate</span>
         </h2>
 
         {message && (
-          <div className={`mb-4 p-4 rounded-lg ${message.includes('Error') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-            {message}
+          <div 
+            className={`rounded-lg ${message.includes('Error') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+            style={{padding: '1rem', overflow: 'hidden', marginBottom: '1.5rem'}}
+          >
+            <p style={{wordBreak: 'break-word'}}>{message}</p>
           </div>
         )}
 
-        <form onSubmit={sendInvite} className="space-y-4">
+        <form onSubmit={sendInvite} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700" style={{marginBottom: '0.75rem'}}>
               Roommate's Email
             </label>
             <input
@@ -157,46 +154,63 @@ const sendInvite = async (e) => {
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
               required
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+              className="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
               placeholder="roommate@email.com"
+              style={{padding: '0.75rem'}}
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 disabled:opacity-50 font-medium"
+            className="w-full bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 font-medium"
+            style={{
+              padding: '0.75rem',
+              whiteSpace: 'nowrap'
+            }}
           >
             {loading ? 'Sending email...' : 'Send Invite Email'}
           </button>
         </form>
       </div>
 
-      {/* Pending Invites */}
+      {/* ✅ FIXED: Pending Invites - MORE padding on TOP and LEFT */}
       {invites.length > 0 && (
-        <div className="bg-white rounded-lg shadow-lg px-20 py-12">
-          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <Mail className="text-blue-600" />
-            Pending Invites
+        <div className="bg-white rounded-lg shadow-lg" style={{padding: '3rem', overflow: 'hidden'}}>
+          <h3 className="text-xl font-bold flex items-center gap-2" style={{marginBottom: '1.5rem'}}>
+            <Mail className="text-blue-600" style={{flexShrink: 0}} />
+            <span style={{wordBreak: 'break-word'}}>Pending Invites</span>
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {invites.filter(i => !i.used).map(invite => (
-              <div key={invite.id} className="p-4 bg-gray-50 rounded-lg flex justify-between items-center">
-                <div>
-                  <p className="font-medium">{invite.email}</p>
+              <div 
+                key={invite.id} 
+                className="bg-gray-50 rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                style={{padding: '1.5rem', overflow: 'hidden'}}
+              >
+                <div style={{flex: 1, minWidth: 0}}>
+                  <p className="font-medium" style={{wordBreak: 'break-word', marginBottom: '0.5rem'}}>{invite.email}</p>
                   <p className="text-sm text-gray-600">
                     Sent: {new Date(invite.created_at).toLocaleDateString()}
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2" style={{flexShrink: 0}}>
                   <button
                     onClick={() => copyInviteLink(invite.token, invite.email)}
-                    className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                    className="bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                    style={{
+                      padding: '0.5rem 1rem',
+                      whiteSpace: 'nowrap'
+                    }}
                   >
                     Copy Link
                   </button>
                   <button
                     onClick={() => deleteInvite(invite.id)}
-                    className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+                    className="bg-red-500 text-white text-sm rounded hover:bg-red-600"
+                    style={{
+                      padding: '0.5rem 0.75rem',
+                      whiteSpace: 'nowrap'
+                    }}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -207,20 +221,31 @@ const sendInvite = async (e) => {
         </div>
       )}
 
-      {/* Current Users */}
-      <div className="bg-white rounded-lg shadow-lg px-20 py-12">
-        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <Users className="text-green-600" />
-          Current Users
+      {/* ✅ FIXED: Current Users - MORE padding on TOP and LEFT */}
+      <div className="bg-white rounded-lg shadow-lg" style={{padding: '3rem', overflow: 'hidden'}}>
+        <h3 className="text-xl font-bold flex items-center gap-2" style={{marginBottom: '1.5rem'}}>
+          <Users className="text-green-600" style={{flexShrink: 0}} />
+          <span style={{wordBreak: 'break-word'}}>Current Users</span>
         </h3>
-        <div className="space-y-3">
+        <div className="space-y-4">
           {users.map(user => (
-            <div key={user.id} className="p-4 bg-gray-50 rounded-lg flex justify-between items-center">
-              <div>
-                <p className="font-medium">{user.name}</p>
-                <p className="text-sm text-gray-600">{user.email}</p>
+            <div 
+              key={user.id} 
+              className="bg-gray-50 rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+              style={{padding: '1.5rem', overflow: 'hidden'}}
+            >
+              <div style={{flex: 1, minWidth: 0}}>
+                <p className="font-medium" style={{wordBreak: 'break-word', marginBottom: '0.5rem'}}>{user.name}</p>
+                <p className="text-sm text-gray-600" style={{wordBreak: 'break-word', marginBottom: '0.5rem'}}>{user.email}</p>
                 {user.role === 'admin' && (
-                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded mt-1 inline-block">
+                  <span 
+                    className="text-xs bg-purple-100 text-purple-700 rounded inline-block"
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      whiteSpace: 'nowrap',
+                      marginTop: '0.25rem'
+                    }}
+                  >
                     Admin
                   </span>
                 )}
@@ -228,7 +253,12 @@ const sendInvite = async (e) => {
               {user.role !== 'admin' && (
                 <button
                   onClick={() => deleteUser(user.id)}
-                  className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+                  className="bg-red-500 text-white text-sm rounded hover:bg-red-600"
+                  style={{
+                    padding: '0.5rem 1rem',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0
+                  }}
                 >
                   Remove
                 </button>

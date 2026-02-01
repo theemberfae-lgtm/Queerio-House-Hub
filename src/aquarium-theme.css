@@ -1,0 +1,615 @@
+/* ============================================
+   QUEERIO HOUSE HUB - 90s AQUARIUM THEME
+   ============================================
+   
+   This CSS file transforms the app into a nostalgic
+   90s aquarium aesthetic with:
+   - Bright aqua/cyan color palette
+   - Animated bubbles
+   - Water wave effects  
+   - Rounded "through glass" styling
+   - Mobile-first responsive design
+   - Animation intensity levels (controlled by user preferences)
+   
+   IMPORTANT: This file should be imported in your main
+   index.css or App.jsx
+*/
+
+/* ============================================
+   COLOR PALETTE - 90s Aquarium Vibes
+   ============================================ */
+:root {
+  /* Primary aquarium colors */
+  --aqua-light: #E0F7FA;
+  --aqua-medium: #80DEEA;
+  --aqua-bright: #00CED1;
+  --aqua-deep: #0097A7;
+  --aqua-dark: #006064;
+  
+  /* Accent colors (coral, tropical fish vibes) */
+  --coral-pink: #FF6B9D;
+  --coral-orange: #FF8A65;
+  --tropical-yellow: #FFD54F;
+  --seaweed-green: #66BB6A;
+  --purple-fish: #AB47BC;
+  
+  /* Bubble and glass effects */
+  --bubble-white: rgba(255, 255, 255, 0.6);
+  --glass-overlay: rgba(255, 255, 255, 0.1);
+  --water-shimmer: rgba(255, 255, 255, 0.3);
+  
+  /* Shadows for depth */
+  --water-shadow: rgba(0, 150, 167, 0.3);
+  --deep-shadow: rgba(0, 96, 100, 0.5);
+}
+
+/* ============================================
+   GLOBAL STYLES - Aquarium Background
+   ============================================ */
+
+/* Replace the default gradient with aquarium gradient */
+body {
+  background: linear-gradient(
+    180deg,
+    #B2EBF2 0%,
+    #80DEEA 50%,
+    #4DD0E1 100%
+  ) !important;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Water caustic light effect overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(ellipse at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 30%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Animated water ripple effect */
+body[data-animation-level="medium"]::before,
+body[data-animation-level="full"]::before {
+  animation: waterCaustics 15s ease-in-out infinite;
+}
+
+@keyframes waterCaustics {
+  0%, 100% {
+    opacity: 0.3;
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translateY(-10px) scale(1.05);
+  }
+}
+
+/* ============================================
+   CARD STYLES - Aquarium Glass Panels
+   ============================================ */
+
+/* Main content cards get the "aquarium glass" treatment */
+.bg-white {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(224, 247, 250, 0.9) 100%
+  ) !important;
+  border: 2px solid rgba(128, 222, 234, 0.4) !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 150, 167, 0.15),
+    inset 0 0 20px rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Rounded corners for that aquarium bubble look */
+.rounded-lg {
+  border-radius: 20px !important;
+}
+
+.rounded {
+  border-radius: 12px !important;
+}
+
+/* ============================================
+   BUTTON STYLES - Tropical Fish Colors
+   ============================================ */
+
+/* Primary buttons (purple theme) get coral upgrade */
+.bg-purple-600,
+.hover\:bg-purple-700:hover {
+  background: linear-gradient(135deg, #AB47BC 0%, #8E24AA 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 15px rgba(171, 71, 188, 0.3);
+  transition: all 0.3s ease;
+}
+
+.bg-purple-600:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(171, 71, 188, 0.4);
+}
+
+/* Secondary buttons */
+.bg-blue-500 {
+  background: linear-gradient(135deg, #00CED1 0%, #0097A7 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 206, 209, 0.3);
+}
+
+.bg-green-500,
+.bg-green-600 {
+  background: linear-gradient(135deg, #66BB6A 0%, #43A047 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 15px rgba(102, 187, 106, 0.3);
+}
+
+.bg-red-500 {
+  background: linear-gradient(135deg, #FF6B9D 0%, #EC407A 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+}
+
+/* Button hover effects with sound visual feedback */
+button:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 8px rgba(0, 150, 167, 0.2);
+}
+
+/* ============================================
+   BUBBLE ANIMATIONS - REALISTIC FLOATING BUBBLES
+   ============================================ */
+
+/* 
+   How these bubbles work:
+   - Each bubble is a div created with CSS ::before pseudo-elements
+   - They have a highlight (white glow) to look 3D
+   - They wobble side-to-side as they float up (like real bubbles!)
+   - Different sizes and speeds make it look natural
+*/
+
+/* Create the bubble container */
+body[data-animation-level="subtle"]::after,
+body[data-animation-level="medium"]::after,
+body[data-animation-level="full"]::after {
+  content: '';
+  position: fixed;
+  bottom: -150px;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1;
+  
+  /* Small bubbles */
+  background-image: 
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
+    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 45%, transparent 75%),
+    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 45%, transparent 75%),
+    radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.25) 50%, transparent 80%);
+  
+  background-size: 
+    15px 15px, 12px 12px, 18px 18px,
+    30px 30px, 25px 25px,
+    45px 45px;
+  
+  background-position: 
+    10% 120%, 40% 130%, 75% 125%,
+    25% 140%, 65% 135%,
+    50% 150%;
+  
+  background-repeat: no-repeat;
+  opacity: 0.5;
+  animation: bubbleRiseWobble 12s ease-in-out infinite;
+}
+
+/* MEDIUM LEVEL: Add more bubbles for fuller effect */
+body[data-animation-level="medium"]::after {
+  background-image: 
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
+    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 45%, transparent 75%),
+    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 45%, transparent 75%),
+    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 45%, transparent 75%),
+    radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.25) 50%, transparent 80%);
+  
+  background-size: 
+    15px 15px, 12px 12px, 18px 18px, 14px 14px,
+    30px 30px, 25px 25px, 28px 28px,
+    45px 45px;
+  
+  background-position: 
+    10% 120%, 40% 130%, 75% 125%, 85% 128%,
+    25% 140%, 65% 135%, 55% 138%,
+    50% 150%;
+  
+  opacity: 0.6;
+  animation: bubbleRiseWobble 10s ease-in-out infinite;
+}
+
+/* FULL LEVEL: Maximum bubbles! */
+body[data-animation-level="full"]::after {
+  background-image: 
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 40%, transparent 70%),
+    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 45%, transparent 75%),
+    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 45%, transparent 75%),
+    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 45%, transparent 75%),
+    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 45%, transparent 75%),
+    radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.25) 50%, transparent 80%),
+    radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.25) 50%, transparent 80%);
+  
+  background-size: 
+    15px 15px, 12px 12px, 18px 18px, 14px 14px, 16px 16px, 13px 13px,
+    30px 30px, 25px 25px, 28px 28px, 32px 32px,
+    45px 45px, 40px 40px;
+  
+  background-position: 
+    10% 120%, 40% 130%, 75% 125%, 85% 128%, 20% 135%, 95% 122%,
+    25% 140%, 65% 135%, 55% 138%, 80% 145%,
+    50% 150%, 35% 155%;
+  
+  opacity: 0.7;
+  animation: bubbleRiseWobble 8s ease-in-out infinite;
+}
+
+/* 
+   BUBBLE RISE ANIMATION WITH WOBBLE
+   This makes bubbles:
+   1. Move upward (translateY)
+   2. Drift left and right (translateX with sine wave pattern)
+   3. Fade out at the top
+*/
+@keyframes bubbleRiseWobble {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.5;
+  }
+  25% {
+    transform: translateY(-25vh) translateX(15px);  /* Drift right */
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-50vh) translateX(-10px); /* Drift left */
+    opacity: 0.7;
+  }
+  75% {
+    transform: translateY(-75vh) translateX(20px);  /* Drift right again */
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(0);    /* Reach top */
+    opacity: 0;  /* Fade out completely */
+  }
+}
+
+/* Individual bubble animations for cards */
+[data-animation-level="medium"] .bg-white:hover,
+[data-animation-level="full"] .bg-white:hover {
+  animation: gentleFloat 3s ease-in-out infinite;
+}
+
+@keyframes gentleFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/* ============================================
+   NAVIGATION BAR - Underwater Shelf
+   ============================================ */
+
+/* Bottom navigation bar gets aquarium glass treatment */
+.fixed.bottom-0 {
+  background: linear-gradient(
+    180deg,
+    rgba(224, 247, 250, 0.95) 0%,
+    rgba(255, 255, 255, 0.98) 100%
+  ) !important;
+  border-top: 3px solid rgba(0, 206, 209, 0.4) !important;
+  box-shadow: 
+    0 -8px 32px rgba(0, 150, 167, 0.2),
+    inset 0 2px 10px rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Active tab indicator */
+.text-purple-600.bg-purple-50 {
+  background: linear-gradient(135deg, rgba(171, 71, 188, 0.2) 0%, rgba(142, 36, 170, 0.15) 100%) !important;
+  border: 2px solid rgba(171, 71, 188, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(171, 71, 188, 0.2) !important;
+}
+
+/* ============================================
+   BADGE STYLES - Colorful Fish Tags
+   ============================================ */
+
+/* Roommate color badges get enhanced treatment */
+.bg-orange-200 {
+  background: linear-gradient(135deg, #FFE0B2 0%, #FFCC80 100%) !important;
+  border: 1px solid #FF8A65;
+  box-shadow: 0 2px 8px rgba(255, 138, 101, 0.3);
+}
+
+.bg-green-200 {
+  background: linear-gradient(135deg, #C8E6C9 0%, #A5D6A7 100%) !important;
+  border: 1px solid #66BB6A;
+  box-shadow: 0 2px 8px rgba(102, 187, 106, 0.3);
+}
+
+.bg-blue-200 {
+  background: linear-gradient(135deg, #B3E5FC 0%, #81D4FA 100%) !important;
+  border: 1px solid #29B6F6;
+  box-shadow: 0 2px 8px rgba(41, 182, 246, 0.3);
+}
+
+.bg-purple-200 {
+  background: linear-gradient(135deg, #E1BEE7 0%, #CE93D8 100%) !important;
+  border: 1px solid #AB47BC;
+  box-shadow: 0 2px 8px rgba(171, 71, 188, 0.3);
+}
+
+/* ============================================
+   FORM INPUTS - Underwater Clarity
+   ============================================ */
+
+input,
+select,
+textarea {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 2px solid rgba(128, 222, 234, 0.4) !important;
+  border-radius: 12px !important;
+  transition: all 0.3s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none !important;
+  border-color: rgba(0, 206, 209, 0.8) !important;
+  box-shadow: 
+    0 0 0 3px rgba(0, 206, 209, 0.1),
+    0 4px 12px rgba(0, 206, 209, 0.2) !important;
+  background: rgba(255, 255, 255, 1) !important;
+}
+
+/* ============================================
+   SPECIAL ELEMENTS
+   ============================================ */
+
+/* Success/error messages with aquarium styling */
+.bg-green-100,
+.bg-green-50 {
+  background: linear-gradient(135deg, rgba(200, 230, 201, 0.9) 0%, rgba(165, 214, 167, 0.8) 100%) !important;
+  border: 2px solid rgba(102, 187, 106, 0.5) !important;
+  backdrop-filter: blur(5px);
+}
+
+.bg-red-100,
+.bg-red-50 {
+  background: linear-gradient(135deg, rgba(255, 205, 210, 0.9) 0%, rgba(239, 154, 154, 0.8) 100%) !important;
+  border: 2px solid rgba(239, 83, 80, 0.5) !important;
+  backdrop-filter: blur(5px);
+}
+
+.bg-yellow-50 {
+  background: linear-gradient(135deg, rgba(255, 249, 196, 0.9) 0%, rgba(255, 238, 154, 0.8) 100%) !important;
+  border: 2px solid rgba(255, 213, 79, 0.5) !important;
+  backdrop-filter: blur(5px);
+}
+
+.bg-blue-50 {
+  background: linear-gradient(135deg, rgba(225, 245, 254, 0.9) 0%, rgba(179, 229, 252, 0.8) 100%) !important;
+  border: 2px solid rgba(3, 169, 244, 0.3) !important;
+  backdrop-filter: blur(5px);
+}
+
+/* ============================================
+   SCROLLBAR - Aquarium Style
+   ============================================ */
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, rgba(224, 247, 250, 0.5) 0%, rgba(179, 229, 252, 0.5) 100%);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(0, 206, 209, 0.6) 0%, rgba(0, 151, 167, 0.7) 100%);
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(0, 206, 209, 0.8) 0%, rgba(0, 151, 167, 0.9) 100%);
+}
+
+/* ============================================
+   LOADING STATES
+   ============================================ */
+
+/* Spinning loader with bubble effect */
+@keyframes spin-bubble {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.1);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+.animate-spin {
+  animation: spin-bubble 1s linear infinite !important;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  /* Slightly reduce effects on mobile for performance */
+  body[data-animation-level="full"]::after {
+    animation-duration: 12s;
+    opacity: 0.4;
+  }
+  
+  /* Ensure tap targets are big enough */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Reduce shadow complexity on mobile */
+  .bg-white {
+    box-shadow: 0 4px 16px rgba(0, 150, 167, 0.1) !important;
+  }
+}
+
+/* ============================================
+   ANIMATION LEVEL CONTROLS
+   ============================================ */
+
+/* OFF - No animations */
+body[data-animation-level="off"] * {
+  animation: none !important;
+  transition: none !important;
+}
+
+body[data-animation-level="off"]::before,
+body[data-animation-level="off"]::after {
+  display: none !important;
+}
+
+/* SUBTLE - Minimal animations */
+body[data-animation-level="subtle"]::after {
+  opacity: 0.2;
+  animation-duration: 15s;
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .bg-white {
+    border-width: 3px !important;
+  }
+  
+  button {
+    border-width: 3px !important;
+  }
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+  /* Remove decorative elements for printing */
+  body::before,
+  body::after {
+    display: none !important;
+  }
+  
+  /* Ensure readable text */
+  body {
+    background: white !important;
+  }
+  
+  .bg-white {
+    background: white !important;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+  }
+}
+
+/* ============================================
+   SPECIAL HOVER EFFECTS (Full Animation Only)
+   ============================================ */
+
+body[data-animation-level="full"] button:hover {
+  animation: gentlePulse 2s ease-in-out infinite;
+}
+
+@keyframes gentlePulse {
+  0%, 100% {
+    box-shadow: 0 4px 15px rgba(0, 206, 209, 0.3);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(0, 206, 209, 0.5);
+  }
+}
+
+/* ============================================
+   DARK MODE SUPPORT (Optional)
+   ============================================
+   
+   If you want to add a "night aquarium" mode later,
+   uncomment this section:
+   
+@media (prefers-color-scheme: dark) {
+  body {
+    background: linear-gradient(
+      180deg,
+      #004D55 0%,
+      #006064 50%,
+      #00838F 100%
+    ) !important;
+  }
+  
+  .bg-white {
+    background: linear-gradient(
+      135deg,
+      rgba(0, 77, 85, 0.95) 0%,
+      rgba(0, 96, 100, 0.9) 100%
+    ) !important;
+    color: #E0F7FA !important;
+  }
+}
+*/
+
+/* ============================================
+   END OF AQUARIUM THEME
+   ============================================ */
+
+/* 🐠 Enjoy your nostalgic 90s aquarium experience! 🐠 */
