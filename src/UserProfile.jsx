@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { Save, Volume2, VolumeX, Waves, User, Calendar, Palette, Eye, EyeOff } from 'lucide-react';
+import { Save, Waves, User, Calendar, Palette, Eye, EyeOff } from 'lucide-react';
 
 const UserProfile = () => {
   const { supabase, profile, updateProfile } = useAuth();
@@ -29,7 +29,6 @@ const UserProfile = () => {
   const [showBirthday, setShowBirthday] = useState(true); // NEW!
   
   // Preferences
-  const [soundEnabled, setSoundEnabled] = useState(false);
   const [animationLevel, setAnimationLevel] = useState('medium');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
@@ -73,7 +72,6 @@ const UserProfile = () => {
             ? JSON.parse(data.preferences) 
             : data.preferences;
           
-          setSoundEnabled(prefs.soundEnabled || false);
           setAnimationLevel(prefs.animationLevel || 'medium');
           
           applyAnimationLevel(prefs.animationLevel || 'medium');
@@ -202,7 +200,6 @@ const UserProfile = () => {
     setSaving(true);
     
     const preferences = {
-      soundEnabled,
       animationLevel
     };
     
@@ -258,103 +255,6 @@ const UserProfile = () => {
     document.body.setAttribute('data-animation-level', level);
     window.userAnimationLevel = level;
   };
-
-  // ========================================
-  // SIMPLE AQUARIUM SOUND EFFECTS
-  // ========================================
-  
-  const playSound = (soundName) => {
-    if (!soundEnabled) return;
-    
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    
-    switch(soundName) {
-      // BUBBLE - Short high-pitched "bloop"
-      case 'bubble':
-        const bubbleOsc = audioContext.createOscillator();
-        const bubbleGain = audioContext.createGain();
-        
-        bubbleOsc.type = 'sine';
-        bubbleOsc.frequency.setValueAtTime(800, audioContext.currentTime);
-        bubbleOsc.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.08);
-        
-        bubbleGain.gain.setValueAtTime(0.3, audioContext.currentTime);
-        bubbleGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.08);
-        
-        bubbleOsc.connect(bubbleGain);
-        bubbleGain.connect(audioContext.destination);
-        
-        bubbleOsc.start();
-        bubbleOsc.stop(audioContext.currentTime + 0.08);
-        break;
-        
-      // SUCCESS - Three CLEAR ascending tones
-      case 'success':
-        const playTone = (freq, startTime) => {
-          const osc = audioContext.createOscillator();
-          const gain = audioContext.createGain();
-          
-          osc.type = 'sine';
-          osc.frequency.value = freq;
-          
-          gain.gain.setValueAtTime(0.2, startTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.2);
-          
-          osc.connect(gain);
-          gain.connect(audioContext.destination);
-          
-          osc.start(startTime);
-          osc.stop(startTime + 0.2);
-        };
-        
-        // Three distinct notes - C, E, G
-        playTone(523, audioContext.currentTime);
-        playTone(659, audioContext.currentTime + 0.15);
-        playTone(784, audioContext.currentTime + 0.3);
-        break;
-        
-      // CLICK - Quick "tap" sound
-      case 'click':
-        const clickOsc = audioContext.createOscillator();
-        const clickGain = audioContext.createGain();
-        
-        clickOsc.type = 'triangle';
-        clickOsc.frequency.value = 1200;
-        
-        clickGain.gain.setValueAtTime(0.2, audioContext.currentTime);
-        clickGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.04);
-        
-        clickOsc.connect(clickGain);
-        clickGain.connect(audioContext.destination);
-        
-        clickOsc.start();
-        clickOsc.stop(audioContext.currentTime + 0.04);
-        break;
-        
-      // SWIM - Low "whoosh" sound
-      case 'swim':
-        const swimOsc = audioContext.createOscillator();
-        const swimGain = audioContext.createGain();
-        
-        swimOsc.type = 'sawtooth';
-        swimOsc.frequency.setValueAtTime(100, audioContext.currentTime);
-        swimOsc.frequency.linearRampToValueAtTime(80, audioContext.currentTime + 0.3);
-        
-        swimGain.gain.setValueAtTime(0.15, audioContext.currentTime);
-        swimGain.gain.linearRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-        
-        swimOsc.connect(swimGain);
-        swimGain.connect(audioContext.destination);
-        
-        swimOsc.start();
-        swimOsc.stop(audioContext.currentTime + 0.3);
-        break;
-    }
-  };
-
-  useEffect(() => {
-    window.playUserSound = playSound;
-  }, [soundEnabled]);
 
   const showMessage = (text, type) => {
     setMessage({ text, type });
@@ -606,97 +506,7 @@ const UserProfile = () => {
       <div className="mb-8">
         <h3 className="text-lg font-semibold mb-4">Appearance & Sound</h3>
         
-        {/* Sound Effects Toggle */}
-        <div className="mb-6 bg-blue-50 rounded-lg border-2 border-blue-200" style={{padding: '1.5rem', overflow: 'hidden'}}>
-          <div className="flex items-start justify-between mb-3 gap-4">
-            <div className="flex-1" style={{minWidth: 0}}>
-              <div className="flex items-center gap-2 mb-2">
-                {soundEnabled ? (
-                  <Volume2 className="text-blue-600" size={24} style={{flexShrink: 0}} />
-                ) : (
-                  <VolumeX className="text-gray-400" size={24} style={{flexShrink: 0}} />
-                )}
-                <h4 className="font-semibold text-base md:text-lg">Sound Effects</h4>
-              </div>
-              <p className="text-xs md:text-sm text-gray-600">
-                Play sounds when you interact with the app
-              </p>
-            </div>
-            
-            <button
-              onClick={() => {
-                const newValue = !soundEnabled;
-                setSoundEnabled(newValue);
-                if (newValue) {
-                  setTimeout(() => playSound('bubble'), 100);
-                }
-              }}
-              className={`relative rounded-full transition-colors ${
-                soundEnabled ? 'bg-blue-600' : 'bg-gray-300'
-              }`}
-              style={{
-                width: '56px',
-                height: '32px',
-                flexShrink: 0
-              }}
-            >
-              <div 
-                className={`absolute top-1 left-1 bg-white rounded-full transition-transform ${
-                  soundEnabled ? 'transform translate-x-6' : ''
-                }`}
-                style={{width: '24px', height: '24px'}}
-              />
-            </button>
-          </div>
-          
-          {soundEnabled && (
-            <div className="mt-3 space-y-2">
-              <p className="text-xs text-gray-600 mb-2">Test the aquarium sounds:</p>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => playSound('bubble')}
-                  className="bg-blue-500 text-white rounded hover:bg-blue-600 text-xs"
-                  style={{
-                    padding: '8px 12px',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  🫧 Bubble Pop
-                </button>
-                <button
-                  onClick={() => playSound('success')}
-                  className="bg-green-500 text-white rounded hover:bg-green-600 text-xs"
-                  style={{
-                    padding: '8px 12px',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  💧 Water Drops
-                </button>
-                <button
-                  onClick={() => playSound('click')}
-                  className="bg-cyan-500 text-white rounded hover:bg-cyan-600 text-xs"
-                  style={{
-                    padding: '8px 12px',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  💦 Splash
-                </button>
-                <button
-                  onClick={() => playSound('swim')}
-                  className="bg-purple-500 text-white rounded hover:bg-purple-600 text-xs"
-                  style={{
-                    padding: '8px 12px',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  🐠 Fish Swim
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+  
         
         {/* Animation Level Selector */}
         <div className="bg-purple-50 rounded-lg border-2 border-purple-200" style={{padding: '1.5rem', overflow: 'hidden'}}>
