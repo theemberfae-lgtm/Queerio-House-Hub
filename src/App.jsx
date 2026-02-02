@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Home, DollarSign, ShoppingCart, Bell, CheckCircle, Users, User, Settings, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './AuthContext';
+import { AuthProvider, useAuth, supabase } from './AuthContext';
 import Login from './Login';
 import Signup from './Signup';
 import AdminUsers from './AdminUsers';
@@ -10,15 +9,11 @@ import AdminSettings from './AdminSettings';
 import PersonalDashboard from './PersonalDashboard';
 import UserProfile from './UserProfile';
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
-
 const App = () => {
   const { profile, signOut, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [bills, setBills] = useState([]);
+  const [householdMembers, setHouseholdMembers] = useState([]);
   
   const [items, setItems] = useState([
     { 
@@ -101,6 +96,7 @@ const App = () => {
 
   useEffect(() => {
     loadData();
+    loadHouseholdMembers();
     
     const channel = supabase
       .channel('household_changes')
@@ -110,10 +106,35 @@ const App = () => {
       )
       .subscribe();
 
+    // Also listen for profile changes to update header
+    const profileChannel = supabase
+      .channel('profile_changes')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles' },
+        () => loadHouseholdMembers()
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(profileChannel);
     };
   }, []);
+
+  const loadHouseholdMembers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('name')
+        .order('name');
+      
+      if (!error && data) {
+        setHouseholdMembers(data.map(p => p.name));
+      }
+    } catch (e) {
+      console.error('Failed to load household members:', e);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -196,7 +217,11 @@ const App = () => {
                 <Home className="text-purple-600" style={{flexShrink: 0}} />
                 <span style={{wordBreak: 'break-word'}}>Queerio House Hub</span>
               </h1>
-              <p className="text-gray-600 text-sm md:text-base" style={{wordBreak: 'break-word'}}>Elle, Ember, Eva & Illari's Home</p>
+              <p className="text-gray-600 text-sm md:text-base" style={{wordBreak: 'break-word'}}>
+                {householdMembers.length > 0 
+                  ? `${householdMembers.join(', ')}${householdMembers.length === 1 ? "'s" : "'"} Home`
+                  : "Loading..."}
+              </p>
             </div>
             <div className="flex items-center gap-4" style={{flexShrink: 0}}>
               <div className="text-right" style={{flexShrink: 0}}>
