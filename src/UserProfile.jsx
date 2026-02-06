@@ -501,14 +501,14 @@ const UserProfile = () => {
       </div>
       
       {/* ========================================
-          APPEARANCE & SOUND
+          APPEARANCE & SOUND - TEMPORARILY HIDDEN
           ======================================== */}
+      {/* Commented out for now - can be re-enabled later
       <div className="mb-8">
         <h3 className="text-lg font-semibold mb-4">Appearance & Sound</h3>
         
   
         
-        {/* Animation Level Selector */}
         <div className="bg-purple-50 rounded-lg border-2 border-purple-200" style={{padding: '1.5rem', overflow: 'hidden'}}>
           <div className="flex items-center gap-2 mb-3">
             <Waves className="text-purple-600" size={24} style={{flexShrink: 0}} />
@@ -590,6 +590,8 @@ const UserProfile = () => {
           </div>
         </div>
       </div>
+      */}
+      
       
       {/* Save Button */}
       <div className="flex gap-4">
