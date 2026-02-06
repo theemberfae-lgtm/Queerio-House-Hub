@@ -258,7 +258,7 @@ const UserProfile = () => {
 
   const showMessage = (text, type) => {
     setMessage({ text, type });
-    setTimeout(() => setMessage(null), 3000);
+    setTimeout(() => setMessage(null), 5000); // Show for 5 seconds instead of 3
   };
 
   const colorOptions = [
@@ -284,15 +284,23 @@ const UserProfile = () => {
     <div className="bg-white rounded-lg shadow-lg" style={{padding: '3rem', overflow: 'hidden'}}>
       <h2 className="text-2xl md:text-3xl font-bold mb-6">Your Profile</h2>
       
-      {/* Messages */}
+      {/* Success/Error Messages - More prominent! */}
       {message && (
         <div 
-          className={`mb-4 rounded-lg ${
-            message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          className={`mb-6 rounded-lg border-2 font-semibold text-center ${
+            message.type === 'success' 
+              ? 'bg-green-50 text-green-800 border-green-400' 
+              : 'bg-red-50 text-red-800 border-red-400'
           }`}
-          style={{padding: '1rem', overflow: 'hidden'}}
+          style={{
+            padding: '1.25rem', 
+            overflow: 'hidden',
+            animation: 'slideDown 0.3s ease-out'
+          }}
         >
-          <p style={{wordBreak: 'break-word'}}>{message.text}</p>
+          <p className="text-lg" style={{wordBreak: 'break-word'}}>
+            {message.text}
+          </p>
         </div>
       )}
       
@@ -598,18 +606,23 @@ const UserProfile = () => {
         <button
           onClick={savePreferences}
           disabled={saving}
-          className="flex-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 font-semibold"
+          className="flex-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 font-semibold transition-all"
           style={{
             padding: '12px',
             whiteSpace: 'nowrap'
           }}
         >
           {saving ? (
-            'Saving...'
+            <span className="flex items-center justify-center gap-2">
+              <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              Saving...
+            </span>
           ) : (
-            <>
-              <Save className="inline mr-2" size={20} />
+            <span className="flex items-center justify-center gap-2">
+              <Save className="inline" size={20} />
               Save All Changes
+            </span>
+          )}
             </>
           )}
         </button>
