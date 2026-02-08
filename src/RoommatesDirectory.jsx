@@ -89,7 +89,7 @@ const RoommatesDirectory = () => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 md:p-8">
+    <div className="bg-white rounded-lg shadow-lg" style={{padding: '3rem', overflow: 'hidden'}}>
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
@@ -104,7 +104,8 @@ const RoommatesDirectory = () => {
         {roommates.map((roommate) => (
           <div
             key={roommate.id}
-            className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-purple-200 p-5"
+            className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-purple-200"
+            style={{padding: '1.5rem', overflow: 'hidden'}}
           >
             {/* Name and Color Badge */}
             <div className="flex items-start justify-between mb-4">

@@ -120,7 +120,7 @@ const AdminProfileEditor = () => {
   // RENDER
   // ========================================
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 md:p-8">
+    <div className="bg-white rounded-lg shadow-lg" style={{padding: '3rem', overflow: 'hidden'}}>
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
@@ -138,11 +138,12 @@ const AdminProfileEditor = () => {
       {/* Success/Error Messages */}
       {message && (
         <div
-          className={`mb-4 rounded-lg border-2 p-3 ${
+          className={`mb-4 rounded-lg border-2 ${
             message.type === 'success'
               ? 'bg-green-50 text-green-800 border-green-400'
               : 'bg-red-50 text-red-800 border-red-400'
           }`}
+          style={{padding: '1.25rem', overflow: 'hidden'}}
         >
           <p className="text-sm font-semibold">{message.text}</p>
         </div>
@@ -153,7 +154,8 @@ const AdminProfileEditor = () => {
         {roommates.map((roommate) => (
           <div
             key={roommate.id}
-            className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-purple-200 p-4"
+            className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-purple-200"
+            style={{padding: '1.5rem', overflow: 'hidden'}}
           >
             {editingId === roommate.id ? (
               // EDITING MODE
@@ -169,7 +171,8 @@ const AdminProfileEditor = () => {
                     onChange={(e) =>
                       setEditForm({ ...editForm, name: e.target.value })
                     }
-                    className="w-full p-2 border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    style={{padding: '14px'}}
                     placeholder="Name"
                   />
                 </div>
@@ -185,7 +188,8 @@ const AdminProfileEditor = () => {
                     onChange={(e) =>
                       setEditForm({ ...editForm, pronouns: e.target.value })
                     }
-                    className="w-full p-2 border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    style={{padding: '14px'}}
                     placeholder="e.g., she/her, he/him, they/them"
                   />
                 </div>
@@ -201,7 +205,8 @@ const AdminProfileEditor = () => {
                     onChange={(e) =>
                       setEditForm({ ...editForm, birthday: e.target.value })
                     }
-                    className="w-full p-2 border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    style={{padding: '14px'}}
                   />
                 </div>
 
@@ -217,11 +222,12 @@ const AdminProfileEditor = () => {
                         onClick={() =>
                           setEditForm({ ...editForm, color: colorOption.value })
                         }
-                        className={`p-2 rounded-lg border-2 text-xs font-semibold transition-all ${
+                        className={`rounded-lg border-2 text-xs font-semibold transition-all ${
                           editForm.color === colorOption.value
                             ? `${getColorClass(colorOption.value)} border-gray-600`
                             : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
                         }`}
+                        style={{padding: '8px'}}
                       >
                         {colorOption.label}
                       </button>
@@ -234,7 +240,8 @@ const AdminProfileEditor = () => {
                   <button
                     onClick={() => saveProfile(roommate.id)}
                     disabled={saving}
-                    className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 disabled:bg-gray-400 font-semibold flex items-center justify-center gap-2"
+                    className="flex-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 font-semibold flex items-center justify-center gap-2"
+                    style={{padding: '12px'}}
                   >
                     <Save size={18} />
                     {saving ? 'Saving...' : 'Save Changes'}
@@ -242,7 +249,8 @@ const AdminProfileEditor = () => {
                   <button
                     onClick={cancelEditing}
                     disabled={saving}
-                    className="px-4 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 disabled:bg-gray-100"
+                    className="bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:bg-gray-100"
+                    style={{padding: '12px 16px'}}
                   >
                     <X size={18} />
                   </button>
@@ -298,7 +306,8 @@ const AdminProfileEditor = () => {
 
                 <button
                   onClick={() => startEditing(roommate)}
-                  className="ml-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2 text-sm font-semibold"
+                  className="ml-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 text-sm font-semibold"
+                  style={{padding: '8px 16px', whiteSpace: 'nowrap'}}
                 >
                   <Edit2 size={16} />
                   Edit
