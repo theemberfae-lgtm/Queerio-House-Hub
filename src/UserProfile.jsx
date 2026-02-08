@@ -623,8 +623,6 @@ const UserProfile = () => {
               Save All Changes
             </span>
           )}
-            </>
-          )}
         </button>
       </div>
       
