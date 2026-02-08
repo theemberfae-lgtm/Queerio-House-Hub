@@ -115,12 +115,18 @@ const RoommatesDirectory = () => {
                     {roommate.name}
                   </h3>
                   {roommate.id === profile?.id && (
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                    <span 
+                      className="text-xs bg-blue-100 text-blue-700 rounded font-semibold"
+                      style={{padding: '6px 12px', whiteSpace: 'nowrap'}}
+                    >
                       You
                     </span>
                   )}
                   {roommate.role === 'admin' && (
-                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                    <span 
+                      className="text-xs bg-purple-100 text-purple-700 rounded font-semibold"
+                      style={{padding: '6px 12px', whiteSpace: 'nowrap'}}
+                    >
                       Admin
                     </span>
                   )}
@@ -137,9 +143,10 @@ const RoommatesDirectory = () => {
               {/* Color Badge */}
               {roommate.color && (
                 <div
-                  className={`px-3 py-1 rounded-full border-2 text-xs font-semibold ${getColorClass(
+                  className={`rounded-full border-2 text-xs font-semibold ${getColorClass(
                     roommate.color
                   )}`}
+                  style={{padding: '6px 16px', whiteSpace: 'nowrap', flexShrink: 0}}
                 >
                   {roommate.color}
                 </div>

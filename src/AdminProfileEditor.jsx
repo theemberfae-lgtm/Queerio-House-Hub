@@ -265,20 +265,27 @@ const AdminProfileEditor = () => {
                       {roommate.name}
                     </h4>
                     {roommate.id === profile?.id && (
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                      <span 
+                        className="text-xs bg-blue-100 text-blue-700 rounded font-semibold"
+                        style={{padding: '6px 12px', whiteSpace: 'nowrap'}}
+                      >
                         You
                       </span>
                     )}
                     {roommate.role === 'admin' && (
-                      <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                      <span 
+                        className="text-xs bg-purple-100 text-purple-700 rounded font-semibold"
+                        style={{padding: '6px 12px', whiteSpace: 'nowrap'}}
+                      >
                         Admin
                       </span>
                     )}
                     {roommate.color && (
                       <span
-                        className={`text-xs px-2 py-1 rounded ${getColorClass(
+                        className={`text-xs rounded font-semibold ${getColorClass(
                           roommate.color
                         )}`}
+                        style={{padding: '6px 12px', whiteSpace: 'nowrap'}}
                       >
                         {roommate.color}
                       </span>
