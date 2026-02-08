@@ -8,6 +8,8 @@ import AdminUsers from './AdminUsers';
 import AdminSettings from './AdminSettings';
 import PersonalDashboard from './PersonalDashboard';
 import UserProfile from './UserProfile';
+import RoommatesDirectory from './RoommatesDirectory';
+import AdminProfileEditor from './AdminProfileEditor';
 
 const App = () => {
   const { profile, signOut, isAdmin } = useAuth();
@@ -258,11 +260,13 @@ const App = () => {
 
         {activeTab === 'dashboard' && <PersonalDashboard bills={bills} items={items} events={events} oneOffTasks={oneOffTasks} />}
         {activeTab === 'profile' && <UserProfile />}
+        {activeTab === 'roommates' && <RoommatesDirectory />}
         {activeTab === 'bills' && <Bills bills={bills} setBills={setBills} saveData={saveData} addActivity={addActivity} />}
         {activeTab === 'items' && <Items items={items} setItems={setItems} saveData={saveData} addActivity={addActivity} colors={colors} selectedItem={selectedItem} setSelectedItem={setSelectedItem} />}
         {activeTab === 'tasks' && <Tasks monthlyChores={monthlyChores} setMonthlyChores={setMonthlyChores} oneOffTasks={oneOffTasks} setOneOffTasks={setOneOffTasks} saveData={saveData} addActivity={addActivity} colors={colors} roommates={roommates} showForm={showForm} setShowForm={setShowForm} selectedItem={selectedItem} setSelectedItem={setSelectedItem} currentMonth={currentMonth} choreHistory={choreHistory} setChoreHistory={setChoreHistory} />}
         {activeTab === 'events' && <Events events={events} setEvents={setEvents} saveData={saveData} addActivity={addActivity} showForm={showForm} setShowForm={setShowForm} />}
         {activeTab === 'admin' && <AdminUsers />}
+        {activeTab === 'admin-profiles' && <AdminProfileEditor />}
         {activeTab === 'settings' && <AdminSettings onDataChange={forceReload} />}
 
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg overflow-x-auto">
@@ -273,9 +277,11 @@ const App = () => {
               { id: 'items', icon: ShoppingCart, label: 'Items' },
               { id: 'tasks', icon: CheckCircle, label: 'Tasks' },
               { id: 'events', icon: Home, label: 'Events' },
+              { id: 'roommates', icon: Users, label: 'Roommates' },
               { id: 'profile', icon: Settings, label: 'Profile' },
               ...(isAdmin ? [
                 { id: 'admin', icon: Users, label: 'Admin' },
+                { id: 'admin-profiles', icon: User, label: 'Edit Profiles' },
                 { id: 'settings', icon: Settings, label: 'Settings' }
               ] : [])
             ].map(tab => (
