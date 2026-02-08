@@ -128,14 +128,14 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
                       )}
                     </div>
                     <p className="text-sm text-gray-600" style={{wordBreak: 'break-word'}}>
-                      Due: {new Date(bill.dueDate).toLocaleDateString()}
+                      Due: {new Date(bill.dueDate + 'T00:00:00').toLocaleDateString()}
                     </p>
                     <p className="text-sm text-gray-600" style={{wordBreak: 'break-word'}}>
                       Your share: {bill.myPercentage.toFixed(1)}% of ${bill.amount}
                     </p>
                     {bill.iPaid && bill.paidDate && (
                       <p className="text-xs text-green-600 mt-1" style={{wordBreak: 'break-word'}}>
-                        Paid on {new Date(bill.paidDate).toLocaleDateString()}
+                        Paid on {new Date(bill.paidDate + 'T00:00:00').toLocaleDateString()}
                       </p>
                     )}
                   </div>
@@ -185,7 +185,7 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
                 <p className="font-semibold" style={{wordBreak: 'break-word'}}>{task.title}</p>
                 {task.dueDate && (
                   <p className="text-sm text-gray-600" style={{wordBreak: 'break-word'}}>
-                    Due: {new Date(task.dueDate).toLocaleDateString()}
+                    Due: {new Date(task.dueDate + 'T00:00:00').toLocaleDateString()}
                   </p>
                 )}
               </div>
@@ -207,7 +207,7 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
               >
                 <p className="font-semibold" style={{wordBreak: 'break-word'}}>{event.title}</p>
                 <p className="text-sm text-gray-600" style={{wordBreak: 'break-word'}}>
-                  {new Date(event.date).toLocaleDateString()}
+                  {new Date(event.date + 'T00:00:00').toLocaleDateString()}
                   {event.time && ` at ${event.time}`}
                 </p>
               </div>

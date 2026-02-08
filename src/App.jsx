@@ -707,7 +707,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs md:text-sm text-gray-600 mt-1">Due: {new Date(b.dueDate).toLocaleDateString()}</p>
+                      <p className="text-xs md:text-sm text-gray-600 mt-1">Due: {new Date(b.dueDate + 'T00:00:00').toLocaleDateString()}</p>
                     </div>
                     <div className="text-right" style={{flexShrink: 0}}>
                       <p className="text-lg md:text-xl font-bold text-purple-600 mb-2">${b.amount}</p>
@@ -748,7 +748,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                               )}
                               {userPayment.paid && (
                                 <span className="text-xs text-green-600">
-                                  Paid {new Date(userPayment.paidDate).toLocaleDateString()}
+                                  Paid {new Date(userPayment.paidDate + 'T00:00:00').toLocaleDateString()}
                                 </span>
                               )}
                             </div>
@@ -781,7 +781,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs md:text-sm text-gray-600">Paid on: {new Date(b.paidDate).toLocaleDateString()}</p>
+                    <p className="text-xs md:text-sm text-gray-600">Paid on: {new Date(b.paidDate + 'T00:00:00').toLocaleDateString()}</p>
                   </div>
                   <div className="text-right" style={{flexShrink: 0}}>
                     <p className="text-lg md:text-xl font-bold text-gray-600">${b.amount}</p>
@@ -980,7 +980,7 @@ const Items = ({ items, setItems, saveData, addActivity, colors, selectedItem, s
                         }}
                       >
                         {item.lastPurchase.person}
-                      </span> on {new Date(item.lastPurchase.date).toLocaleDateString()}
+                      </span> on {new Date(item.lastPurchase.date + 'T00:00:00').toLocaleDateString()}
                     </p>
                   )}
                   
@@ -1454,7 +1454,8 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
 
   // Format date nicely
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    // Append T00:00:00 to treat as local time, not UTC (prevents day-shift bug)
+    const date = new Date(dateString + 'T00:00:00');
     return date.toLocaleDateString('en-US', { 
       month: 'long', 
       day: 'numeric', 
