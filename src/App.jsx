@@ -320,6 +320,15 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
   const [recurrenceType, setRecurrenceType] = useState('monthly');
   const [users, setUsers] = useState([]);
   const [splits, setSplits] = useState({});
+  
+  // Edit bill state
+  const [editingBill, setEditingBill] = useState(null);
+  const [editCat, setEditCat] = useState('');
+  const [editAmt, setEditAmt] = useState('');
+  const [editDue, setEditDue] = useState('');
+  const [editSplits, setEditSplits] = useState({});
+  const [editRecurring, setEditRecurring] = useState(false);
+  const [editRecurrenceType, setEditRecurrenceType] = useState('monthly');
 
   useEffect(() => {
     loadUsers();
@@ -410,6 +419,69 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
     setShow(false);
   };
 
+  const startEditBill = (bill) => {
+    setEditingBill(bill.id);
+    setEditCat(bill.category);
+    setEditAmt(bill.amount.toString());
+    setEditDue(bill.dueDate);
+    setEditSplits(bill.splits || {});
+    setEditRecurring(bill.recurring || false);
+    setEditRecurrenceType(bill.recurrenceType || 'monthly');
+  };
+
+  const cancelEdit = () => {
+    setEditingBill(null);
+    setEditCat('');
+    setEditAmt('');
+    setEditDue('');
+    setEditSplits({});
+    setEditRecurring(false);
+    setEditRecurrenceType('monthly');
+  };
+
+  const updateBill = () => {
+    if (!editCat || !editAmt || !editDue) {
+      alert('Please fill all fields');
+      return;
+    }
+
+    // Validate splits total 100%
+    const totalSplit = Object.values(editSplits).reduce((sum, val) => sum + parseFloat(val || 0), 0);
+    if (Math.abs(totalSplit - 100) > 0.01) {
+      alert(`Splits must total 100%. Currently: ${totalSplit.toFixed(2)}%`);
+      return;
+    }
+
+    const updated = bills.map(bill => {
+      if (bill.id === editingBill) {
+        // Update payments object if splits changed
+        const newPayments = { ...bill.payments };
+        Object.keys(editSplits).forEach(userId => {
+          if (!newPayments[userId]) {
+            newPayments[userId] = { paid: false, paidDate: null };
+          }
+        });
+
+        return {
+          ...bill,
+          category: editCat,
+          amount: parseFloat(editAmt),
+          dueDate: editDue,
+          splits: editSplits,
+          payments: newPayments,
+          recurring: editRecurring,
+          recurrenceType: editRecurring ? editRecurrenceType : null
+        };
+      }
+      return bill;
+    });
+
+    setBills(updated);
+    saveData({ bills: updated });
+    addActivity(`${editCat} bill updated`);
+    cancelEdit();
+  };
+
   const markUserPaid = (billId, userId) => {
     if (!isAdmin) return;
     
@@ -421,7 +493,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
         const newPayments = { ...b.payments };
         newPayments[userId] = {
           paid: true,
-          paidDate: new Date().toISOString()
+          paidDate: new Date().toISOString().split('T')[0]  // YYYY-MM-DD format only
         };
         
         const allPaid = Object.values(newPayments).every(p => p.paid);
@@ -430,7 +502,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
           ...b,
           payments: newPayments,
           paid: allPaid,
-          paidDate: allPaid ? new Date().toISOString() : b.paidDate
+          paidDate: allPaid ? new Date().toISOString().split('T')[0] : b.paidDate
         };
       }
       return b;
@@ -439,6 +511,34 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
     setBills(updated);
     saveData({ bills: updated });
     addActivity(`${userName} paid their share of ${bill.category}`);
+  };
+
+  const unmarkUserPaid = (billId, userId) => {
+    if (!isAdmin) return;
+    
+    const bill = bills.find(b => b.id === billId);
+    const userName = getUserName(userId);
+    
+    const updated = bills.map(b => {
+      if (b.id === billId) {
+        const newPayments = { ...b.payments };
+        newPayments[userId] = {
+          paid: false,
+          paidDate: null
+        };
+        
+        return {
+          ...b,
+          payments: newPayments,
+          paid: false  // If any payment is unmarked, bill is not fully paid
+        };
+      }
+      return b;
+    });
+    
+    setBills(updated);
+    saveData({ bills: updated });
+    addActivity(`${userName}'s payment for ${bill.category} was unmarked`);
   };
 
   const calculateNextDueDate = (currentDueDate, recurrenceType) => {
@@ -697,7 +797,116 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
               
               return (
                 <div key={b.id} className="rounded-lg border-2 bg-gray-50 border-gray-200" style={{padding: '1.5rem', overflow: 'hidden'}}>
-                  <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-3">
+                  {editingBill === b.id ? (
+                    // EDIT MODE
+                    <div className="space-y-4">
+                      <h3 className="font-bold text-lg text-purple-600 mb-4">Edit Bill</h3>
+                      
+                      {/* Category */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <input
+                          type="text"
+                          value={editCat}
+                          onChange={(e) => setEditCat(e.target.value)}
+                          className="w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500"
+                          style={{padding: '14px'}}
+                        />
+                      </div>
+
+                      {/* Amount */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                        <input
+                          type="number"
+                          value={editAmt}
+                          onChange={(e) => setEditAmt(e.target.value)}
+                          className="w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500"
+                          style={{padding: '14px'}}
+                        />
+                      </div>
+
+                      {/* Due Date */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                        <input
+                          type="date"
+                          value={editDue}
+                          onChange={(e) => setEditDue(e.target.value)}
+                          className="w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500"
+                          style={{padding: '14px'}}
+                        />
+                      </div>
+
+                      {/* Recurring */}
+                      <div>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={editRecurring}
+                            onChange={(e) => setEditRecurring(e.target.checked)}
+                          />
+                          <span className="text-sm font-medium text-gray-700">Recurring Bill</span>
+                        </label>
+                        {editRecurring && (
+                          <select
+                            value={editRecurrenceType}
+                            onChange={(e) => setEditRecurrenceType(e.target.value)}
+                            className="mt-2 w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500"
+                            style={{padding: '14px'}}
+                          >
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="yearly">Yearly</option>
+                          </select>
+                        )}
+                      </div>
+
+                      {/* Splits */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Split Percentages</label>
+                        <div className="space-y-2">
+                          {users.map(user => (
+                            <div key={user.id} className="flex items-center gap-2">
+                              <span className="w-32 text-sm">{user.name}</span>
+                              <input
+                                type="number"
+                                value={editSplits[user.id] || ''}
+                                onChange={(e) => setEditSplits({ ...editSplits, [user.id]: e.target.value })}
+                                className="flex-1 border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                style={{padding: '8px'}}
+                                placeholder="0"
+                              />
+                              <span className="text-sm text-gray-600">%</span>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-600 mt-2">
+                          Total: {Object.values(editSplits).reduce((sum, val) => sum + parseFloat(val || 0), 0).toFixed(2)}%
+                        </p>
+                      </div>
+
+                      {/* Buttons */}
+                      <div className="flex gap-2 pt-2">
+                        <button
+                          onClick={updateBill}
+                          className="flex-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold"
+                          style={{padding: '12px'}}
+                        >
+                          Save Changes
+                        </button>
+                        <button
+                          onClick={cancelEdit}
+                          className="bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                          style={{padding: '12px 16px'}}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    // NORMAL VIEW
+                    <><div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-3">
                     <div style={{flex: 1, minWidth: 0}}>
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-bold text-base md:text-lg" style={{wordBreak: 'break-word'}}>{b.category}</h3>
@@ -712,7 +921,20 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                     <div className="text-right" style={{flexShrink: 0}}>
                       <p className="text-lg md:text-xl font-bold text-purple-600 mb-2">${b.amount}</p>
                       {isAdmin && (
-                        <button onClick={() => del(b.id)} className="px-4 py-1 bg-red-500 text-white text-xs md:text-sm rounded hover:bg-red-600 whitespace-nowrap flex-shrink-0 min-w-[70px]">Delete</button>
+                        <div className="flex gap-2 justify-end">
+                          <button 
+                            onClick={() => startEditBill(b)} 
+                            className="px-4 py-1 bg-blue-500 text-white text-xs md:text-sm rounded hover:bg-blue-600 whitespace-nowrap flex-shrink-0 min-w-[70px]"
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            onClick={() => del(b.id)} 
+                            className="px-4 py-1 bg-red-500 text-white text-xs md:text-sm rounded hover:bg-red-600 whitespace-nowrap flex-shrink-0 min-w-[70px]"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -747,15 +969,26 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                                 </button>
                               )}
                               {userPayment.paid && (
-                                <span className="text-xs text-green-600">
-                                  Paid {new Date(userPayment.paidDate + 'T00:00:00').toLocaleDateString()}
-                                </span>
+                                <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
+                                  <span className="text-xs text-green-600">
+                                    Paid {new Date(userPayment.paidDate + 'T00:00:00').toLocaleDateString()}
+                                  </span>
+                                  {isAdmin && (
+                                    <button
+                                      onClick={() => unmarkUserPaid(b.id, userId)}
+                                      className="px-3 py-1 bg-gray-400 text-white text-xs rounded hover:bg-gray-500 whitespace-nowrap"
+                                    >
+                                      Undo
+                                    </button>
+                                  )}
+                                </div>
                               )}
                             </div>
                           );
                         })}
                       </div>
                     </div>
+                  )}
                   )}
                 </div>
               );
