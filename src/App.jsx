@@ -336,6 +336,11 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
   const [pendingCredits, setPendingCredits] = useState([]);
   const [creditDecisions, setCreditDecisions] = useState({});
 
+  // User payment tracking state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentModalData, setPaymentModalData] = useState(null);
+  const [editingPayment, setEditingPayment] = useState(null);
+
   useEffect(() => {
     loadUsers();
   }, []);
@@ -386,7 +391,10 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
     Object.keys(splits).forEach(userId => {
       payments[userId] = {
         paid: false,
-        paidDate: null
+        paidDate: null,
+        paymentHistory: [],
+        totalPaid: 0,
+        amountPaid: 0
       };
     });
     
@@ -732,6 +740,162 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
     setBills(updated);
     saveData({ bills: updated });
     addActivity(`${userName}'s payment for ${bill.category} was unmarked`);
+  };
+
+  // User payment tracking functions
+  const openPaymentModal = (billId, userId, bill) => {
+    const userSplit = bill.splits[userId];
+    let amountOwed;
+    if (userSplit <= 100) {
+      amountOwed = (bill.amount * userSplit) / 100;
+    } else {
+      amountOwed = userSplit;
+    }
+
+    setPaymentModalData({
+      billId,
+      userId,
+      billName: bill.category,
+      amountOwed,
+      currentPayments: bill.payments?.[userId]?.paymentHistory || []
+    });
+    setShowPaymentModal(true);
+  };
+
+  const addUserPayment = (amount, date, note) => {
+    const { billId, userId } = paymentModalData;
+    const { profile } = useAuth();
+    
+    // Only allow users to add their own payments
+    if (profile.id !== userId) {
+      alert('You can only add payments for yourself');
+      return;
+    }
+
+    const updated = bills.map(bill => {
+      if (bill.id === billId) {
+        const userPayment = bill.payments?.[userId] || { 
+          paymentHistory: [],
+          totalPaid: 0 
+        };
+        
+        const newPayment = {
+          id: Date.now(),
+          amount: parseFloat(amount),
+          date: date,
+          note: note || '',
+          addedBy: userId,
+          addedAt: new Date().toISOString()
+        };
+
+        const newHistory = [...(userPayment.paymentHistory || []), newPayment];
+        const newTotalPaid = newHistory.reduce((sum, p) => sum + p.amount, 0);
+        
+        // Calculate amount owed
+        const userSplit = bill.splits[userId];
+        let amountOwed;
+        if (userSplit <= 100) {
+          amountOwed = (bill.amount * userSplit) / 100;
+        } else {
+          amountOwed = userSplit;
+        }
+
+        const newPayments = { ...bill.payments };
+        newPayments[userId] = {
+          ...userPayment,
+          paymentHistory: newHistory,
+          totalPaid: newTotalPaid,
+          paid: newTotalPaid >= amountOwed - 0.01,  // Consider paid if within 1 cent
+          paidDate: newTotalPaid >= amountOwed - 0.01 ? date : null,
+          amountPaid: newTotalPaid
+        };
+
+        // Check if all users have paid
+        const allPaid = Object.keys(bill.splits).every(uid => 
+          newPayments[uid]?.paid === true
+        );
+
+        return {
+          ...bill,
+          payments: newPayments,
+          paid: allPaid,
+          paidDate: allPaid ? date : bill.paidDate
+        };
+      }
+      return bill;
+    });
+
+    setBills(updated);
+    saveData({ bills: updated });
+    addActivity(`Payment of $${amount} added for ${paymentModalData.billName}`);
+    
+    // Update modal data to show new payment
+    const updatedBill = updated.find(b => b.id === billId);
+    setPaymentModalData({
+      ...paymentModalData,
+      currentPayments: updatedBill.payments[userId].paymentHistory
+    });
+  };
+
+  const deleteUserPayment = (paymentId) => {
+    const { billId, userId } = paymentModalData;
+    const { profile } = useAuth();
+    
+    // Only allow users to delete their own payments (or admin)
+    if (profile.id !== userId && !isAdmin) {
+      alert('You can only delete your own payments');
+      return;
+    }
+
+    const updated = bills.map(bill => {
+      if (bill.id === billId) {
+        const userPayment = bill.payments[userId];
+        const newHistory = userPayment.paymentHistory.filter(p => p.id !== paymentId);
+        const newTotalPaid = newHistory.reduce((sum, p) => sum + p.amount, 0);
+        
+        // Calculate amount owed
+        const userSplit = bill.splits[userId];
+        let amountOwed;
+        if (userSplit <= 100) {
+          amountOwed = (bill.amount * userSplit) / 100;
+        } else {
+          amountOwed = userSplit;
+        }
+
+        const newPayments = { ...bill.payments };
+        newPayments[userId] = {
+          ...userPayment,
+          paymentHistory: newHistory,
+          totalPaid: newTotalPaid,
+          paid: newTotalPaid >= amountOwed - 0.01,
+          paidDate: newTotalPaid >= amountOwed - 0.01 ? (newHistory.length > 0 ? newHistory[newHistory.length - 1].date : null) : null,
+          amountPaid: newTotalPaid
+        };
+
+        // Check if all users have paid
+        const allPaid = Object.keys(bill.splits).every(uid => 
+          newPayments[uid]?.paid === true
+        );
+
+        return {
+          ...bill,
+          payments: newPayments,
+          paid: allPaid
+        };
+      }
+      return bill;
+    });
+
+    setBills(updated);
+    saveData({ bills: updated });
+    addActivity(`Payment deleted for ${paymentModalData.billName}`);
+    
+    // Update modal data
+    const updatedBill = updated.find(b => b.id === billId);
+    setPaymentModalData({
+      ...paymentModalData,
+      currentPayments: updatedBill.payments[userId]?.paymentHistory || []
+    });
   };
 
   const calculateNextDueDate = (currentDueDate, recurrenceType) => {
@@ -1109,6 +1273,237 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
         </div>
       )}
 
+      {/* User Payment Tracking Modal */}
+      {showPaymentModal && paymentModalData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{padding: '1rem'}}>
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" style={{padding: '2rem'}}>
+            <h2 className="text-2xl font-bold text-purple-600 mb-2">💸 Payment Tracker</h2>
+            <h3 className="text-lg text-gray-700 mb-4">{paymentModalData.billName}</h3>
+            
+            {/* Amount Summary */}
+            <div className="bg-purple-50 border-2 border-purple-200 rounded-lg mb-6" style={{padding: '1.5rem'}}>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Amount You Owe:</p>
+                  <p className="text-2xl font-bold text-purple-600">${paymentModalData.amountOwed.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Total Paid So Far:</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    ${paymentModalData.currentPayments.reduce((sum, p) => sum + p.amount, 0).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 pt-3 border-t border-purple-300">
+                <p className="text-sm text-gray-600">Remaining Balance:</p>
+                <p className={`text-xl font-bold ${
+                  paymentModalData.amountOwed - paymentModalData.currentPayments.reduce((sum, p) => sum + p.amount, 0) <= 0.01 
+                    ? 'text-green-600' 
+                    : 'text-orange-600'
+                }`}>
+                  ${Math.max(0, paymentModalData.amountOwed - paymentModalData.currentPayments.reduce((sum, p) => sum + p.amount, 0)).toFixed(2)}
+                </p>
+              </div>
+            </div>
+
+            {/* Add New Payment Form */}
+            {!editingPayment && (
+              <div className="bg-gray-50 border-2 border-gray-200 rounded-lg mb-6" style={{padding: '1.5rem'}}>
+                <h4 className="font-semibold text-gray-700 mb-3">Add Payment</h4>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                      <input
+                        type="number"
+                        id="payment-amount"
+                        className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        style={{padding: '10px'}}
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                      <input
+                        type="date"
+                        id="payment-date"
+                        className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        style={{padding: '10px'}}
+                        defaultValue={new Date().toISOString().split('T')[0]}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Note (optional)</label>
+                    <input
+                      type="text"
+                      id="payment-note"
+                      className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      style={{padding: '10px'}}
+                      placeholder="e.g., Venmo, Cash, Check #123"
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      const amount = document.getElementById('payment-amount').value;
+                      const date = document.getElementById('payment-date').value;
+                      const note = document.getElementById('payment-note').value;
+                      
+                      if (!amount || parseFloat(amount) <= 0) {
+                        alert('Please enter a valid amount');
+                        return;
+                      }
+                      
+                      addUserPayment(amount, date, note);
+                      
+                      // Clear form
+                      document.getElementById('payment-amount').value = '';
+                      document.getElementById('payment-note').value = '';
+                    }}
+                    className="w-full bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
+                    style={{padding: '12px'}}
+                  >
+                    ➕ Add Payment
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Edit Payment Form */}
+            {editingPayment && (
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg mb-6" style={{padding: '1.5rem'}}>
+                <h4 className="font-semibold text-blue-700 mb-3">Edit Payment</h4>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                      <input
+                        type="number"
+                        id="edit-payment-amount"
+                        defaultValue={editingPayment.amount}
+                        className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        style={{padding: '10px'}}
+                        step="0.01"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                      <input
+                        type="date"
+                        id="edit-payment-date"
+                        defaultValue={editingPayment.date}
+                        className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        style={{padding: '10px'}}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
+                    <input
+                      type="text"
+                      id="edit-payment-note"
+                      defaultValue={editingPayment.note}
+                      className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      style={{padding: '10px'}}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        const amount = document.getElementById('edit-payment-amount').value;
+                        const date = document.getElementById('edit-payment-date').value;
+                        const note = document.getElementById('edit-payment-note').value;
+                        
+                        if (!amount || parseFloat(amount) <= 0) {
+                          alert('Please enter a valid amount');
+                          return;
+                        }
+                        
+                        // Delete old payment and add updated one
+                        deleteUserPayment(editingPayment.id);
+                        addUserPayment(amount, date, note);
+                        setEditingPayment(null);
+                      }}
+                      className="flex-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
+                      style={{padding: '12px'}}
+                    >
+                      💾 Save Changes
+                    </button>
+                    <button
+                      onClick={() => setEditingPayment(null)}
+                      className="bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                      style={{padding: '12px 24px'}}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Payment History */}
+            <div className="mb-6">
+              <h4 className="font-semibold text-gray-700 mb-3">Payment History</h4>
+              {paymentModalData.currentPayments.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No payments recorded yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {paymentModalData.currentPayments.map(payment => (
+                    <div key={payment.id} className="flex items-center justify-between bg-white border-2 border-gray-200 rounded-lg" style={{padding: '1rem'}}>
+                      <div className="flex-1">
+                        <p className="font-semibold text-lg">${payment.amount.toFixed(2)}</p>
+                        <p className="text-sm text-gray-600">
+                          {new Date(payment.date + 'T00:00:00').toLocaleDateString()}
+                        </p>
+                        {payment.note && (
+                          <p className="text-xs text-gray-500 italic mt-1">{payment.note}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setEditingPayment(payment)}
+                          className="bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                          style={{padding: '6px 12px'}}
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm('Delete this payment?')) {
+                              deleteUserPayment(payment.id);
+                            }
+                          }}
+                          className="bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                          style={{padding: '6px 12px'}}
+                        >
+                          🗑️ Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Close Button */}
+            <button
+              onClick={() => {
+                setShowPaymentModal(false);
+                setPaymentModalData(null);
+                setEditingPayment(null);
+              }}
+              className="w-full bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-semibold"
+              style={{padding: '14px'}}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
       {unpaidBills.length > 0 && (
         <>
           <h3 className="text-base md:text-lg font-semibold mb-3 text-gray-700">Unpaid Bills</h3>
@@ -1117,7 +1512,13 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
               if (!b.payments && b.splits) {
                 b.payments = {};
                 Object.keys(b.splits).forEach(userId => {
-                  b.payments[userId] = { paid: false, paidDate: null };
+                  b.payments[userId] = { 
+                    paid: false, 
+                    paidDate: null,
+                    paymentHistory: [],
+                    totalPaid: 0,
+                    amountPaid: 0
+                  };
                 });
               }
               
@@ -1376,6 +1777,20 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                                   <span className="text-xs md:text-sm text-gray-600 ml-2">
                                     {splitValue <= 100 ? `(${splitValue}% = $${userAmount.toFixed(2)})` : `($${splitValue.toFixed(2)})`}
                                   </span>
+                                  {/* Show partial payment progress */}
+                                  {!userPayment.paid && userPayment.totalPaid > 0 && (
+                                    <div className="mt-1">
+                                      <span className="text-xs text-blue-600 font-semibold">
+                                        Partial: ${userPayment.totalPaid.toFixed(2)} of ${userAmount.toFixed(2)}
+                                      </span>
+                                      <div className="w-32 h-2 bg-gray-200 rounded-full mt-1">
+                                        <div 
+                                          className="h-2 bg-blue-500 rounded-full"
+                                          style={{width: `${Math.min(100, (userPayment.totalPaid / userAmount) * 100)}%`}}
+                                        ></div>
+                                      </div>
+                                    </div>
+                                  )}
                                   {hasOverpayment && (
                                     <div className="ml-2">
                                       <span className="text-xs text-yellow-700 font-semibold">
@@ -1390,20 +1805,49 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                                   )}
                                 </div>
                               </div>
-                              {isAdmin && !userPayment.paid && (
-                                <button
-                                  onClick={() => markUserPaid(b.id, userId)}
-                                  className="bg-green-600 text-white text-xs md:text-sm rounded hover:bg-green-700 w-full md:w-auto whitespace-nowrap"
-                                  style={{padding: '8px 16px'}}
-                                >
-                                  Mark Paid
-                                </button>
+                              {!userPayment.paid && (
+                                <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                                  {isAdmin && (
+                                    <button
+                                      onClick={() => markUserPaid(b.id, userId)}
+                                      className="bg-green-600 text-white text-xs md:text-sm rounded hover:bg-green-700 whitespace-nowrap"
+                                      style={{padding: '8px 16px'}}
+                                    >
+                                      ✓ Mark Paid
+                                    </button>
+                                  )}
+                                  {profile && profile.id === userId && (
+                                    <button
+                                      onClick={() => openPaymentModal(b.id, userId, b)}
+                                      className="bg-blue-600 text-white text-xs md:text-sm rounded hover:bg-blue-700 whitespace-nowrap"
+                                      style={{padding: '8px 16px'}}
+                                    >
+                                      💸 Track Payment
+                                    </button>
+                                  )}
+                                </div>
                               )}
                               {userPayment.paid && (
                                 <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
-                                  <span className="text-xs text-green-600">
-                                    Paid {formatPaidDate(userPayment.paidDate)}
-                                  </span>
+                                  {userPayment.paymentHistory && userPayment.paymentHistory.length > 0 ? (
+                                    <div className="flex flex-col">
+                                      <span className="text-xs text-green-600 font-semibold">
+                                        ✓ Paid in {userPayment.paymentHistory.length} payment{userPayment.paymentHistory.length > 1 ? 's' : ''}
+                                      </span>
+                                      {profile && profile.id === userId && (
+                                        <button
+                                          onClick={() => openPaymentModal(b.id, userId, b)}
+                                          className="text-xs text-blue-600 hover:underline mt-1"
+                                        >
+                                          View payments
+                                        </button>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-green-600">
+                                      Paid {formatPaidDate(userPayment.paidDate)}
+                                    </span>
+                                  )}
                                   {isAdmin && (
                                     <button
                                       onClick={() => unmarkUserPaid(b.id, userId)}
