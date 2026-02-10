@@ -1173,6 +1173,8 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                           onChange={(e) => setEditAmt(e.target.value)}
                           className="w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500"
                           style={{padding: '14px'}}
+                          step="0.01"
+                          min="0"
                         />
                       </div>
 
@@ -1233,7 +1235,10 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                         </label>
                         <div className="space-y-2">
                           {users.map(user => {
-                            const isIncluded = editSplits[user.id] && parseFloat(editSplits[user.id]) > 0;
+                            // Check if user is in editSplits (not just if value > 0)
+                            const isIncluded = editSplits.hasOwnProperty(user.id) && editSplits[user.id] !== null && editSplits[user.id] !== undefined;
+                            const currentValue = editSplits[user.id] || '0';
+                            
                             return (
                               <div key={user.id} className="flex items-center gap-2">
                                 <input
@@ -1241,13 +1246,13 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                                   checked={isIncluded}
                                   onChange={(e) => {
                                     if (e.target.checked) {
-                                      // Add user with default split
-                                      const defaultValue = editSplitMode === 'percent' ? '25' : '0';
+                                      // Add user with reasonable default
+                                      const defaultValue = editSplitMode === 'percent' ? '25' : '50';
                                       setEditSplits({ ...editSplits, [user.id]: defaultValue });
                                     } else {
-                                      // Remove user
+                                      // Remove user completely
                                       const newSplits = { ...editSplits };
-                                      newSplits[user.id] = '0';
+                                      delete newSplits[user.id];
                                       setEditSplits(newSplits);
                                     }
                                   }}
@@ -1256,12 +1261,13 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                                 <span className="w-32 text-sm">{user.name}</span>
                                 <input
                                   type="number"
-                                  value={editSplits[user.id] || '0'}
+                                  value={currentValue}
                                   onChange={(e) => setEditSplits({ ...editSplits, [user.id]: e.target.value })}
                                   disabled={!isIncluded}
                                   className="flex-1 border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100 disabled:text-gray-400"
                                   style={{padding: '8px'}}
                                   placeholder="0"
+                                  step="0.01"
                                 />
                                 <span className="text-sm text-gray-600 w-8">
                                   {editSplitMode === 'percent' ? '%' : '$'}
