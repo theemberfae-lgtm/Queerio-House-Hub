@@ -19,6 +19,7 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
     
     // Otherwise it's YYYY-MM-DD format, add time to make it local
     return new Date(paidDate + 'T00:00:00').toLocaleDateString();
+  };
 
   // Calculate what this user owes
   const unpaidBills = bills.filter(b => !b.paid);
