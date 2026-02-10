@@ -331,6 +331,11 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
   const [editRecurring, setEditRecurring] = useState(false);
   const [editRecurrenceType, setEditRecurrenceType] = useState('monthly');
 
+  // Credit management state
+  const [showCreditModal, setShowCreditModal] = useState(false);
+  const [pendingCredits, setPendingCredits] = useState([]);
+  const [creditDecisions, setCreditDecisions] = useState({});
+
   useEffect(() => {
     loadUsers();
   }, []);
@@ -485,16 +490,99 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
 
     const updated = bills.map(bill => {
       if (bill.id === editingBill) {
-        // Create new payments object only for users in activeSplits
-        const newPayments = {};
+        // Calculate new amounts owed
+        const newAmountsOwed = {};
         Object.keys(activeSplits).forEach(userId => {
-          // Keep existing payment status if user was already in the bill
-          if (bill.payments && bill.payments[userId]) {
-            newPayments[userId] = bill.payments[userId];
+          const splitValue = activeSplits[userId];
+          if (editSplitMode === 'percent') {
+            newAmountsOwed[userId] = (parseFloat(editAmt) * splitValue) / 100;
           } else {
-            newPayments[userId] = { paid: false, paidDate: null };
+            newAmountsOwed[userId] = splitValue;
           }
         });
+
+        // Create new payments object preserving existing payments
+        const newPayments = {};
+        let hasOverpayments = false;
+        let overpaymentDetails = [];
+        
+        Object.keys(activeSplits).forEach(userId => {
+          const existingPayment = bill.payments?.[userId];
+          const newAmountOwed = newAmountsOwed[userId];
+          
+          if (existingPayment && existingPayment.paid) {
+            // User has already paid - check if amount matches
+            const amountPaid = existingPayment.amountPaid || 0;
+            
+            if (amountPaid > newAmountOwed + 0.01) {
+              // Overpayment - user paid more than new amount owed
+              hasOverpayments = true;
+              const overpayment = amountPaid - newAmountOwed;
+              overpaymentDetails.push({
+                userName: getUserName(userId),
+                overpayment: overpayment
+              });
+              
+              // Keep the payment marked as paid with original amount
+              newPayments[userId] = {
+                ...existingPayment,
+                overpayment: overpayment  // Track the overpayment
+              };
+            } else {
+              // Payment is fine or underpaid (they'll need to pay more)
+              newPayments[userId] = existingPayment;
+            }
+          } else {
+            // User hasn't paid yet or wasn't in original bill
+            newPayments[userId] = { 
+              paid: false, 
+              paidDate: null,
+              amountPaid: 0
+            };
+          }
+        });
+
+        // Show credit management modal if there are overpayments
+        if (hasOverpayments) {
+          // Store pending credits and show modal
+          const creditsWithUserIds = overpaymentDetails.map((detail, index) => {
+            const userId = Object.keys(activeSplits).find(uid => getUserName(uid) === detail.userName);
+            return {
+              userId: userId,
+              userName: detail.userName,
+              overpayment: detail.overpayment
+            };
+          });
+          
+          setPendingCredits(creditsWithUserIds);
+          
+          // Initialize credit decisions
+          const initialDecisions = {};
+          creditsWithUserIds.forEach(credit => {
+            initialDecisions[credit.userId] = {
+              action: 'credit', // 'credit' or 'refund'
+              applyTo: 'account' // 'account' or specific bill category
+            };
+          });
+          setCreditDecisions(initialDecisions);
+          
+          // Store the pending update to apply after credit decisions
+          window.pendingBillUpdate = {
+            billId: editingBill,
+            updates: {
+              category: editCat,
+              amount: parseFloat(editAmt),
+              dueDate: editDue,
+              splits: activeSplits,
+              payments: newPayments,
+              recurring: editRecurring,
+              recurrenceType: editRecurring ? editRecurrenceType : null
+            }
+          };
+          
+          setShowCreditModal(true);
+          return; // Don't save yet - wait for credit decisions
+        }
 
         return {
           ...bill,
@@ -516,18 +604,89 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
     cancelEdit();
   };
 
+  const applyCreditDecisions = () => {
+    // Apply the bill update with credit decisions
+    const pendingUpdate = window.pendingBillUpdate;
+    if (!pendingUpdate) return;
+    
+    const updated = bills.map(bill => {
+      if (bill.id === pendingUpdate.billId) {
+        const newPayments = { ...pendingUpdate.updates.payments };
+        
+        // Apply credit decisions to payments
+        Object.keys(creditDecisions).forEach(userId => {
+          const decision = creditDecisions[userId];
+          if (newPayments[userId]) {
+            newPayments[userId] = {
+              ...newPayments[userId],
+              creditAction: decision.action, // 'credit' or 'refund'
+              creditAppliedTo: decision.action === 'credit' ? decision.applyTo : null
+            };
+          }
+        });
+        
+        return {
+          ...bill,
+          ...pendingUpdate.updates,
+          payments: newPayments
+        };
+      }
+      return bill;
+    });
+    
+    setBills(updated);
+    saveData({ bills: updated });
+    
+    // Log activity
+    const creditSummary = Object.entries(creditDecisions)
+      .map(([userId, decision]) => {
+        const userName = getUserName(userId);
+        if (decision.action === 'refund') {
+          return `${userName}: Refund issued`;
+        } else {
+          return `${userName}: Credit to ${decision.applyTo}`;
+        }
+      })
+      .join(', ');
+    
+    addActivity(`${pendingUpdate.updates.category} bill updated with credit adjustments: ${creditSummary}`);
+    
+    // Clean up
+    setShowCreditModal(false);
+    setPendingCredits([]);
+    setCreditDecisions({});
+    window.pendingBillUpdate = null;
+    cancelEdit();
+  };
+
   const markUserPaid = (billId, userId) => {
     if (!isAdmin) return;
     
     const bill = bills.find(b => b.id === billId);
     const userName = getUserName(userId);
     
+    // Get today's date in local timezone (not UTC)
+    const today = new Date();
+    const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
+    // Calculate amount this user is paying
+    const userSplit = bill.splits[userId];
+    let amountPaid;
+    if (userSplit <= 100) {
+      // Percentage split
+      amountPaid = (bill.amount * userSplit) / 100;
+    } else {
+      // Dollar split
+      amountPaid = userSplit;
+    }
+    
     const updated = bills.map(b => {
       if (b.id === billId) {
         const newPayments = { ...b.payments };
         newPayments[userId] = {
           paid: true,
-          paidDate: new Date().toISOString().split('T')[0]  // YYYY-MM-DD format only
+          paidDate: localDate,
+          amountPaid: amountPaid  // Store actual dollar amount paid
         };
         
         const allPaid = Object.values(newPayments).every(p => p.paid);
@@ -536,7 +695,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
           ...b,
           payments: newPayments,
           paid: allPaid,
-          paidDate: allPaid ? new Date().toISOString().split('T')[0] : b.paidDate
+          paidDate: allPaid ? localDate : b.paidDate
         };
       }
       return b;
@@ -544,7 +703,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
     
     setBills(updated);
     saveData({ bills: updated });
-    addActivity(`${userName} paid their share of ${bill.category}`);
+    addActivity(`${userName} paid their share of ${bill.category} ($${amountPaid.toFixed(2)})`);
   };
 
   const unmarkUserPaid = (billId, userId) => {
@@ -831,6 +990,125 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
         </div>
       )}
 
+      {/* Credit Management Modal */}
+      {showCreditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{padding: '1rem'}}>
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" style={{padding: '2rem'}}>
+            <h2 className="text-2xl font-bold text-purple-600 mb-4">💰 Credit Management</h2>
+            
+            <p className="text-gray-700 mb-6">
+              The following users have overpaid due to your changes. Please decide how to handle each credit:
+            </p>
+            
+            <div className="space-y-6">
+              {pendingCredits.map(credit => (
+                <div key={credit.userId} className="border-2 border-purple-200 rounded-lg" style={{padding: '1.5rem', overflow: 'hidden'}}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="font-bold text-lg">{credit.userName}</h3>
+                      <p className="text-2xl font-bold text-green-600">${credit.overpayment.toFixed(2)} credit</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {/* Action Selection */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">What would you like to do?</label>
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-3 p-3 border-2 rounded cursor-pointer hover:bg-purple-50" style={{
+                          borderColor: creditDecisions[credit.userId]?.action === 'credit' ? '#9333ea' : '#e5e7eb',
+                          backgroundColor: creditDecisions[credit.userId]?.action === 'credit' ? '#faf5ff' : 'white'
+                        }}>
+                          <input
+                            type="radio"
+                            name={`action-${credit.userId}`}
+                            checked={creditDecisions[credit.userId]?.action === 'credit'}
+                            onChange={() => setCreditDecisions({
+                              ...creditDecisions,
+                              [credit.userId]: { ...creditDecisions[credit.userId], action: 'credit' }
+                            })}
+                            className="w-4 h-4"
+                          />
+                          <div>
+                            <p className="font-semibold">Apply as Credit</p>
+                            <p className="text-sm text-gray-600">Keep on their account for future bills</p>
+                          </div>
+                        </label>
+                        
+                        <label className="flex items-center gap-3 p-3 border-2 rounded cursor-pointer hover:bg-purple-50" style={{
+                          borderColor: creditDecisions[credit.userId]?.action === 'refund' ? '#9333ea' : '#e5e7eb',
+                          backgroundColor: creditDecisions[credit.userId]?.action === 'refund' ? '#faf5ff' : 'white'
+                        }}>
+                          <input
+                            type="radio"
+                            name={`action-${credit.userId}`}
+                            checked={creditDecisions[credit.userId]?.action === 'refund'}
+                            onChange={() => setCreditDecisions({
+                              ...creditDecisions,
+                              [credit.userId]: { ...creditDecisions[credit.userId], action: 'refund' }
+                            })}
+                            className="w-4 h-4"
+                          />
+                          <div>
+                            <p className="font-semibold">Issue Refund</p>
+                            <p className="text-sm text-gray-600">Pay them back the overpayment</p>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                    
+                    {/* Apply To Selection (only if credit) */}
+                    {creditDecisions[credit.userId]?.action === 'credit' && (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Where to apply credit?</label>
+                        <select
+                          value={creditDecisions[credit.userId]?.applyTo || 'account'}
+                          onChange={(e) => setCreditDecisions({
+                            ...creditDecisions,
+                            [credit.userId]: { ...creditDecisions[credit.userId], applyTo: e.target.value }
+                          })}
+                          className="w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500"
+                          style={{padding: '14px'}}
+                        >
+                          <option value="account">General Account Credit</option>
+                          <option value="rent">Next Rent Bill</option>
+                          <option value="utilities">Next Utilities Bill</option>
+                          <option value="internet">Next Internet Bill</option>
+                          <option value="groceries">Next Groceries Bill</option>
+                          <option value="other">Other (specify in notes)</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={applyCreditDecisions}
+                className="flex-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold"
+                style={{padding: '14px'}}
+              >
+                Apply Decisions & Save Bill
+              </button>
+              <button
+                onClick={() => {
+                  setShowCreditModal(false);
+                  setPendingCredits([]);
+                  setCreditDecisions({});
+                  window.pendingBillUpdate = null;
+                }}
+                className="bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                style={{padding: '14px 24px'}}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {unpaidBills.length > 0 && (
         <>
           <h3 className="text-base md:text-lg font-semibold mb-3 text-gray-700">Unpaid Bills</h3>
@@ -849,6 +1127,30 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                     // EDIT MODE
                     <div className="space-y-4">
                       <h3 className="font-bold text-lg text-purple-600 mb-4">Edit Bill</h3>
+                      
+                      {/* Show existing payments warning */}
+                      {b.payments && Object.values(b.payments).some(p => p.paid) && (
+                        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg" style={{padding: '1rem'}}>
+                          <p className="font-semibold text-yellow-800 mb-2">⚠️ Existing Payments:</p>
+                          <div className="space-y-1 text-sm">
+                            {Object.entries(b.payments).map(([userId, payment]) => {
+                              if (payment.paid) {
+                                const userName = getUserName(userId);
+                                const amountPaid = payment.amountPaid || 0;
+                                return (
+                                  <p key={userId} className="text-yellow-700">
+                                    • {userName} paid ${amountPaid.toFixed(2)} on {formatPaidDate(payment.paidDate)}
+                                  </p>
+                                );
+                              }
+                              return null;
+                            })}
+                          </div>
+                          <p className="text-xs text-yellow-600 mt-2 italic">
+                            Changes may create overpayments or underpayments. Review carefully!
+                          </p>
+                        </div>
+                      )}
                       
                       {/* Category */}
                       <div>
@@ -1015,13 +1317,15 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                         <div className="flex gap-2 justify-end">
                           <button 
                             onClick={() => startEditBill(b)} 
-                            className="px-4 py-1 bg-blue-500 text-white text-xs md:text-sm rounded hover:bg-blue-600 whitespace-nowrap flex-shrink-0 min-w-[70px]"
+                            className="bg-blue-500 text-white text-xs md:text-sm rounded hover:bg-blue-600 whitespace-nowrap flex-shrink-0"
+                            style={{padding: '8px 16px'}}
                           >
                             Edit
                           </button>
                           <button 
                             onClick={() => del(b.id)} 
-                            className="px-4 py-1 bg-red-500 text-white text-xs md:text-sm rounded hover:bg-red-600 whitespace-nowrap flex-shrink-0 min-w-[70px]"
+                            className="bg-red-500 text-white text-xs md:text-sm rounded hover:bg-red-600 whitespace-nowrap flex-shrink-0"
+                            style={{padding: '8px 16px'}}
                           >
                             Delete
                           </button>
@@ -1037,27 +1341,54 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                     <div className="mt-3 pt-3 border-t border-gray-300">
                       <p className="text-xs md:text-sm font-semibold text-gray-700 mb-2">Payment Status:</p>
                       <div className="space-y-2">
-                        {Object.entries(b.splits).map(([userId, percentage]) => {
-                          const userPayment = b.payments[userId] || { paid: false, paidDate: null };
-                          const userAmount = ((b.amount * percentage) / 100).toFixed(2);
+                        {Object.entries(b.splits).map(([userId, splitValue]) => {
+                          const userPayment = b.payments[userId] || { paid: false, paidDate: null, amountPaid: 0 };
+                          
+                          // Calculate amount owed based on split type
+                          let userAmount;
+                          if (splitValue <= 100) {
+                            // Percentage split
+                            userAmount = (b.amount * splitValue) / 100;
+                          } else {
+                            // Dollar split
+                            userAmount = splitValue;
+                          }
+                          
+                          // Check for overpayment
+                          const amountPaid = userPayment.amountPaid || 0;
+                          const hasOverpayment = userPayment.paid && amountPaid > userAmount + 0.01;
+                          const overpaymentAmount = hasOverpayment ? amountPaid - userAmount : 0;
                           
                           return (
-                            <div key={userId} className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-2 rounded ${userPayment.paid ? 'bg-green-50 border border-green-200' : 'bg-white border border-gray-200'}`} style={{padding: '0.75rem'}}>
+                            <div key={userId} className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-2 rounded ${userPayment.paid ? (hasOverpayment ? 'bg-yellow-50 border border-yellow-300' : 'bg-green-50 border border-green-200') : 'bg-white border border-gray-200'}`} style={{padding: '0.75rem'}}>
                               <div className="flex items-center gap-3">
-                                <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${userPayment.paid ? 'bg-green-500' : 'bg-gray-300'}`}>
-                                  {userPayment.paid && <span className="text-white text-xs">✓</span>}
+                                <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${userPayment.paid ? (hasOverpayment ? 'bg-yellow-500' : 'bg-green-500') : 'bg-gray-300'}`}>
+                                  {userPayment.paid && <span className="text-white text-xs">{hasOverpayment ? '!' : '✓'}</span>}
                                 </div>
                                 <div>
                                   <span className="font-medium text-sm md:text-base" style={{wordBreak: 'break-word'}}>{getUserName(userId)}</span>
                                   <span className="text-xs md:text-sm text-gray-600 ml-2">
-                                    ({percentage}% = ${userAmount})
+                                    {splitValue <= 100 ? `(${splitValue}% = $${userAmount.toFixed(2)})` : `($${splitValue.toFixed(2)})`}
                                   </span>
+                                  {hasOverpayment && (
+                                    <div className="ml-2">
+                                      <span className="text-xs text-yellow-700 font-semibold">
+                                        +${overpaymentAmount.toFixed(2)} credit
+                                      </span>
+                                      {userPayment.creditAction && (
+                                        <span className="text-xs text-purple-600 ml-2">
+                                          ({userPayment.creditAction === 'refund' ? '💰 Refund issued' : `📝 Applied to ${userPayment.creditAppliedTo}`})
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                               {isAdmin && !userPayment.paid && (
                                 <button
                                   onClick={() => markUserPaid(b.id, userId)}
-                                  className="px-4 py-1 bg-green-600 text-white text-xs md:text-sm rounded hover:bg-green-700 w-full md:w-auto whitespace-nowrap min-w-[90px]"
+                                  className="bg-green-600 text-white text-xs md:text-sm rounded hover:bg-green-700 w-full md:w-auto whitespace-nowrap"
+                                  style={{padding: '8px 16px'}}
                                 >
                                   Mark Paid
                                 </button>
@@ -1070,7 +1401,8 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                                   {isAdmin && (
                                     <button
                                       onClick={() => unmarkUserPaid(b.id, userId)}
-                                      className="px-3 py-1 bg-gray-400 text-white text-xs rounded hover:bg-gray-500 whitespace-nowrap"
+                                      className="bg-gray-400 text-white text-xs rounded hover:bg-gray-500 whitespace-nowrap"
+                                      style={{padding: '8px 16px'}}
                                     >
                                       Undo
                                     </button>
