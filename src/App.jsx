@@ -327,6 +327,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
   const [editAmt, setEditAmt] = useState('');
   const [editDue, setEditDue] = useState('');
   const [editSplits, setEditSplits] = useState({});
+  const [editSplitMode, setEditSplitMode] = useState('percent');
   const [editRecurring, setEditRecurring] = useState(false);
   const [editRecurrenceType, setEditRecurrenceType] = useState('monthly');
 
@@ -425,6 +426,12 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
     setEditAmt(bill.amount.toString());
     setEditDue(bill.dueDate);
     setEditSplits(bill.splits || {});
+    
+    // Detect if using percent or dollar splits
+    const firstSplit = Object.values(bill.splits || {})[0];
+    const isPercent = firstSplit && firstSplit <= 100;
+    setEditSplitMode(isPercent ? 'percent' : 'dollar');
+    
     setEditRecurring(bill.recurring || false);
     setEditRecurrenceType(bill.recurrenceType || 'monthly');
   };
@@ -435,6 +442,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
     setEditAmt('');
     setEditDue('');
     setEditSplits({});
+    setEditSplitMode('percent');
     setEditRecurring(false);
     setEditRecurrenceType('monthly');
   };
@@ -445,19 +453,45 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
       return;
     }
 
-    // Validate splits total 100%
-    const totalSplit = Object.values(editSplits).reduce((sum, val) => sum + parseFloat(val || 0), 0);
-    if (Math.abs(totalSplit - 100) > 0.01) {
-      alert(`Splits must total 100%. Currently: ${totalSplit.toFixed(2)}%`);
+    // Filter out users with no split (unchecked users)
+    const activeSplits = {};
+    Object.keys(editSplits).forEach(userId => {
+      const value = parseFloat(editSplits[userId] || 0);
+      if (value > 0) {
+        activeSplits[userId] = value;
+      }
+    });
+
+    if (Object.keys(activeSplits).length === 0) {
+      alert('At least one person must be assigned to pay this bill');
       return;
+    }
+
+    // Validate splits based on mode
+    if (editSplitMode === 'percent') {
+      const totalSplit = Object.values(activeSplits).reduce((sum, val) => sum + parseFloat(val), 0);
+      if (Math.abs(totalSplit - 100) > 0.01) {
+        alert(`Splits must total 100%. Currently: ${totalSplit.toFixed(2)}%`);
+        return;
+      }
+    } else {
+      // Dollar mode
+      const totalSplit = Object.values(activeSplits).reduce((sum, val) => sum + parseFloat(val), 0);
+      if (Math.abs(totalSplit - parseFloat(editAmt)) > 0.01) {
+        alert(`Splits must total $${editAmt}. Currently: $${totalSplit.toFixed(2)}`);
+        return;
+      }
     }
 
     const updated = bills.map(bill => {
       if (bill.id === editingBill) {
-        // Update payments object if splits changed
-        const newPayments = { ...bill.payments };
-        Object.keys(editSplits).forEach(userId => {
-          if (!newPayments[userId]) {
+        // Create new payments object only for users in activeSplits
+        const newPayments = {};
+        Object.keys(activeSplits).forEach(userId => {
+          // Keep existing payment status if user was already in the bill
+          if (bill.payments && bill.payments[userId]) {
+            newPayments[userId] = bill.payments[userId];
+          } else {
             newPayments[userId] = { paid: false, paidDate: null };
           }
         });
@@ -467,7 +501,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
           category: editCat,
           amount: parseFloat(editAmt),
           dueDate: editDue,
-          splits: editSplits,
+          splits: activeSplits,
           payments: newPayments,
           recurring: editRecurring,
           recurrenceType: editRecurring ? editRecurrenceType : null
@@ -618,6 +652,20 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
   const getUserName = (userId) => {
     const user = users.find(u => u.id === userId);
     return user ? user.name : 'Unknown';
+  };
+
+  // Helper to format paid date - handles both ISO timestamps and YYYY-MM-DD formats
+  const formatPaidDate = (paidDate) => {
+    if (!paidDate) return 'Invalid Date';
+    
+    // If it already has a 'T' in it, it's an ISO timestamp - just use the date part
+    if (paidDate.includes('T')) {
+      const dateOnly = paidDate.split('T')[0];
+      return new Date(dateOnly + 'T00:00:00').toLocaleDateString();
+    }
+    
+    // Otherwise it's YYYY-MM-DD format, add time to make it local
+    return new Date(paidDate + 'T00:00:00').toLocaleDateString();
   };
 
   const unpaidBills = bills.filter(b => !b.paid).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
@@ -862,27 +910,70 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                         )}
                       </div>
 
+                      {/* Split Type Selector */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Split Type</label>
+                        <select
+                          value={editSplitMode}
+                          onChange={(e) => setEditSplitMode(e.target.value)}
+                          className="w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500"
+                          style={{padding: '14px'}}
+                        >
+                          <option value="percent">Percentage Split</option>
+                          <option value="dollar">Dollar Amount Split</option>
+                        </select>
+                      </div>
+
                       {/* Splits */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Split Percentages</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {editSplitMode === 'percent' ? 'Split Percentages' : 'Split Amounts'}
+                        </label>
                         <div className="space-y-2">
-                          {users.map(user => (
-                            <div key={user.id} className="flex items-center gap-2">
-                              <span className="w-32 text-sm">{user.name}</span>
-                              <input
-                                type="number"
-                                value={editSplits[user.id] || ''}
-                                onChange={(e) => setEditSplits({ ...editSplits, [user.id]: e.target.value })}
-                                className="flex-1 border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                style={{padding: '8px'}}
-                                placeholder="0"
-                              />
-                              <span className="text-sm text-gray-600">%</span>
-                            </div>
-                          ))}
+                          {users.map(user => {
+                            const isIncluded = editSplits[user.id] && parseFloat(editSplits[user.id]) > 0;
+                            return (
+                              <div key={user.id} className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={isIncluded}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      // Add user with default split
+                                      const defaultValue = editSplitMode === 'percent' ? '25' : '0';
+                                      setEditSplits({ ...editSplits, [user.id]: defaultValue });
+                                    } else {
+                                      // Remove user
+                                      const newSplits = { ...editSplits };
+                                      newSplits[user.id] = '0';
+                                      setEditSplits(newSplits);
+                                    }
+                                  }}
+                                  className="flex-shrink-0"
+                                />
+                                <span className="w-32 text-sm">{user.name}</span>
+                                <input
+                                  type="number"
+                                  value={editSplits[user.id] || '0'}
+                                  onChange={(e) => setEditSplits({ ...editSplits, [user.id]: e.target.value })}
+                                  disabled={!isIncluded}
+                                  className="flex-1 border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100 disabled:text-gray-400"
+                                  style={{padding: '8px'}}
+                                  placeholder="0"
+                                />
+                                <span className="text-sm text-gray-600 w-8">
+                                  {editSplitMode === 'percent' ? '%' : '$'}
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
                         <p className="text-xs text-gray-600 mt-2">
-                          Total: {Object.values(editSplits).reduce((sum, val) => sum + parseFloat(val || 0), 0).toFixed(2)}%
+                          {editSplitMode === 'percent' ? (
+                            <>Total: {Object.values(editSplits).reduce((sum, val) => sum + parseFloat(val || 0), 0).toFixed(2)}%</>
+                          ) : (
+                            <>Total: ${Object.values(editSplits).reduce((sum, val) => sum + parseFloat(val || 0), 0).toFixed(2)} {editAmt && `(Must be $${editAmt})`}</>
+                          )}
                         </p>
                       </div>
 
@@ -920,7 +1011,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                     </div>
                     <div className="text-right" style={{flexShrink: 0}}>
                       <p className="text-lg md:text-xl font-bold text-purple-600 mb-2">${b.amount}</p>
-                      {isAdmin && (
+                      {isAdmin && !b.paid && (
                         <div className="flex gap-2 justify-end">
                           <button 
                             onClick={() => startEditBill(b)} 
@@ -935,6 +1026,9 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                             Delete
                           </button>
                         </div>
+                      )}
+                      {isAdmin && b.paid && (
+                        <span className="text-sm text-green-600 font-semibold">✓ Fully Paid</span>
                       )}
                     </div>
                   </div>
@@ -971,7 +1065,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                               {userPayment.paid && (
                                 <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
                                   <span className="text-xs text-green-600">
-                                    Paid {new Date(userPayment.paidDate + 'T00:00:00').toLocaleDateString()}
+                                    Paid {formatPaidDate(userPayment.paidDate)}
                                   </span>
                                   {isAdmin && (
                                     <button
@@ -1015,7 +1109,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs md:text-sm text-gray-600">Paid on: {new Date(b.paidDate + 'T00:00:00').toLocaleDateString()}</p>
+                    <p className="text-xs md:text-sm text-gray-600">Paid on: {formatPaidDate(b.paidDate)}</p>
                   </div>
                   <div className="text-right" style={{flexShrink: 0}}>
                     <p className="text-lg md:text-xl font-bold text-gray-600">${b.amount}</p>
