@@ -989,7 +989,8 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                       </div>
                     </div>
                   )}
-                  )}
+                  </>
+                )}
                 </div>
               );
             })}
@@ -2199,4 +2200,3 @@ const AppWrapper = () => {
 };
 
 export default AppWrapper;
-// test
