@@ -1185,32 +1185,38 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
             {showDateFilter ? '✕ Hide Filter' : '📅 Filter by Date'}
           </button>
           {isAdmin && (
-            <button onClick={() => setShow(true)} className="px-5 md:px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm md:text-base whitespace-nowrap flex-shrink-0 min-w-[110px]">+ Add Bill</button>
+            <button 
+              onClick={() => setShow(true)} 
+              className="bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm md:text-base whitespace-nowrap flex-shrink-0"
+              style={{padding: '8px 16px'}}
+            >
+              + Add Bill
+            </button>
           )}
         </div>
       </div>
 
       {/* Date Filter UI */}
       {showDateFilter && (
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
+        <div className="mb-6 bg-gray-50 rounded-lg border-2 border-gray-200" style={{padding: '1.5rem'}}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+              <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">From Date</label>
               <input
                 type="date"
                 value={dateFilterFrom}
                 onChange={(e) => setDateFilterFrom(e.target.value)}
-                className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
                 style={{padding: '10px'}}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+              <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">To Date</label>
               <input
                 type="date"
                 value={dateFilterTo}
                 onChange={(e) => setDateFilterTo(e.target.value)}
-                className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
                 style={{padding: '10px'}}
               />
             </div>
@@ -1219,8 +1225,8 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                 setDateFilterFrom('');
                 setDateFilterTo('');
               }}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
-              style={{padding: '10px'}}
+              className="bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm md:text-base font-semibold"
+              style={{padding: '10px 16px'}}
             >
               Clear Filter
             </button>
@@ -1505,28 +1511,28 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
 
       {/* User Payment Tracking Modal */}
       {showPaymentModal && paymentModalData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{padding: '1rem'}}>
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" style={{padding: '2rem'}}>
-            <h2 className="text-2xl font-bold text-purple-600 mb-2">💸 Payment Tracker</h2>
-            <h3 className="text-lg text-gray-700 mb-4">{paymentModalData.billName}</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" style={{padding: '2rem'}}>
+            <h2 className="text-xl md:text-2xl font-bold text-purple-600 mb-2">💸 Payment Tracker</h2>
+            <h3 className="text-base md:text-lg text-gray-700 mb-4">{paymentModalData.billName}</h3>
             
             {/* Amount Summary */}
             <div className="bg-purple-50 border-2 border-purple-200 rounded-lg mb-6" style={{padding: '1.5rem'}}>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-600">Amount You Owe:</p>
-                  <p className="text-2xl font-bold text-purple-600">${paymentModalData.amountOwed.toFixed(2)}</p>
+                  <p className="text-xs md:text-sm text-gray-600">Amount You Owe:</p>
+                  <p className="text-xl md:text-2xl font-bold text-purple-600">${paymentModalData.amountOwed.toFixed(2)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Total Paid So Far:</p>
-                  <p className="text-2xl font-bold text-green-600">
+                  <p className="text-xs md:text-sm text-gray-600">Total Paid So Far:</p>
+                  <p className="text-xl md:text-2xl font-bold text-green-600">
                     ${paymentModalData.currentPayments.reduce((sum, p) => sum + p.amount, 0).toFixed(2)}
                   </p>
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t border-purple-300">
-                <p className="text-sm text-gray-600">Remaining Balance:</p>
-                <p className={`text-xl font-bold ${
+                <p className="text-xs md:text-sm text-gray-600">Remaining Balance:</p>
+                <p className={`text-lg md:text-xl font-bold ${
                   paymentModalData.amountOwed - paymentModalData.currentPayments.reduce((sum, p) => sum + p.amount, 0) <= 0.01 
                     ? 'text-green-600' 
                     : 'text-orange-600'
@@ -1539,15 +1545,15 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
             {/* Add New Payment Form - Only in Log Mode */}
             {!editingPayment && paymentModalMode === 'log' && (
               <div className="bg-gray-50 border-2 border-gray-200 rounded-lg mb-6" style={{padding: '1.5rem'}}>
-                <h4 className="font-semibold text-gray-700 mb-3">Log New Payment</h4>
+                <h4 className="text-base md:text-lg font-semibold text-gray-700 mb-3">Log New Payment</h4>
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
                       <input
                         type="number"
                         id="payment-amount"
-                        className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
                         style={{padding: '10px'}}
                         step="0.01"
                         min="0"
@@ -1555,23 +1561,23 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Date</label>
                       <input
                         type="date"
                         id="payment-date"
                         max={new Date().toISOString().split('T')[0]}
-                        className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
                         style={{padding: '10px'}}
                         defaultValue={new Date().toISOString().split('T')[0]}
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Note (optional)</label>
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Note (optional)</label>
                     <input
                       type="text"
                       id="payment-note"
-                      className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
                       style={{padding: '10px'}}
                       placeholder="e.g., Venmo, Cash, Check #123"
                     />
@@ -1593,7 +1599,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                       document.getElementById('payment-amount').value = '';
                       document.getElementById('payment-note').value = '';
                     }}
-                    className="w-full bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
+                    className="w-full bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold text-sm md:text-base"
                     style={{padding: '12px'}}
                   >
                     ➕ Add Payment
@@ -1605,44 +1611,44 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
             {/* Edit Payment Form */}
             {editingPayment && (
               <div className="bg-blue-50 border-2 border-blue-300 rounded-lg mb-6" style={{padding: '1.5rem'}}>
-                <h4 className="font-semibold text-blue-700 mb-3">Edit Payment</h4>
+                <h4 className="text-base md:text-lg font-semibold text-blue-700 mb-3">Edit Payment</h4>
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
                       <input
                         type="number"
                         id="edit-payment-amount"
                         defaultValue={editingPayment.amount}
-                        className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                         style={{padding: '10px'}}
                         step="0.01"
                         min="0"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                      <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Date</label>
                       <input
                         type="date"
                         id="edit-payment-date"
                         max={new Date().toISOString().split('T')[0]}
                         defaultValue={editingPayment.date}
-                        className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                         style={{padding: '10px'}}
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Note</label>
                     <input
                       type="text"
                       id="edit-payment-note"
                       defaultValue={editingPayment.note}
-                      className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                       style={{padding: '10px'}}
                     />
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col md:flex-row gap-2">
                     <button
                       onClick={() => {
                         const amount = document.getElementById('edit-payment-amount').value;
@@ -1773,7 +1779,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                 >
                   {isFutureInstance && (
                     <div className="mb-2">
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                      <span className="text-xs md:text-sm bg-blue-100 text-blue-700 rounded" style={{padding: '4px 12px'}}>
                         📅 Future Instance (Recurring)
                       </span>
                     </div>
@@ -1965,7 +1971,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-bold text-base md:text-lg break-words" style={{maxWidth: '100%'}}>{b.category}</h3>
                         {b.recurring && (
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded whitespace-nowrap flex-shrink-0">
+                          <span className="text-xs md:text-sm bg-blue-100 text-blue-700 rounded whitespace-nowrap flex-shrink-0" style={{padding: '4px 12px'}}>
                             {getRecurrenceLabel(b.recurrenceType)}
                           </span>
                         )}
