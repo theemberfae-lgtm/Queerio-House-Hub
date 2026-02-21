@@ -7,46 +7,57 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
 
   if (!profile) return null;
 
-  // Helper to format paid date - handles both ISO timestamps and YYYY-MM-DD formats
-  const formatPaidDate = (paidDate) => {
-    if (!paidDate) return 'Invalid Date';
-    
-    // If it already has a 'T' in it, it's an ISO timestamp - just use the date part
-    if (paidDate.includes('T')) {
-      const dateOnly = paidDate.split('T')[0];
-      return new Date(dateOnly + 'T00:00:00').toLocaleDateString();
-    }
-    
-    // Otherwise it's YYYY-MM-DD format, add time to make it local
-    return new Date(paidDate + 'T00:00:00').toLocaleDateString();
-  };
-
   // Calculate what this user owes
   const unpaidBills = bills.filter(b => !b.paid);
   let totalOwed = 0;
   let totalPaid = 0;
+  let totalCredits = 0;  // Track overpayments/credits
   const myBills = [];
 
   unpaidBills.forEach(bill => {
     if (bill.splits && bill.splits[profile.id]) {
-      const percentage = parseFloat(bill.splits[profile.id]);
-      const amountOwed = (bill.amount * percentage) / 100;
+      const splitValue = parseFloat(bill.splits[profile.id]);
+      
+      // Calculate amount owed based on split type
+      let amountOwed;
+      if (splitValue <= 100) {
+        // Percentage split
+        amountOwed = (bill.amount * splitValue) / 100;
+      } else {
+        // Dollar split
+        amountOwed = splitValue;
+      }
       
       const myPayment = bill.payments?.[profile.id];
       const iPaid = myPayment?.paid || false;
+      const amountPaid = myPayment?.totalPaid || myPayment?.amountPaid || 0;
       
       if (!iPaid) {
-        totalOwed += amountOwed;
+        // Track partial payments
+        if (amountPaid > 0) {
+          totalPaid += amountPaid;
+          totalOwed += (amountOwed - amountPaid);
+        } else {
+          totalOwed += amountOwed;
+        }
       } else {
-        totalPaid += amountOwed;
+        totalPaid += amountPaid;
+        // Check for overpayment (credit)
+        if (amountPaid > amountOwed + 0.01) {
+          totalCredits += (amountPaid - amountOwed);
+        }
       }
       
       myBills.push({
         ...bill,
         myShare: amountOwed,
-        myPercentage: percentage,
+        myPercentage: splitValue <= 100 ? splitValue : null,
+        myDollarAmount: splitValue > 100 ? splitValue : null,
         iPaid: iPaid,
-        paidDate: myPayment?.paidDate
+        paidDate: myPayment?.paidDate,
+        amountPaid: amountPaid,
+        hasCredit: amountPaid > amountOwed + 0.01,
+        creditAmount: Math.max(0, amountPaid - amountOwed)
       });
     }
   });
@@ -78,15 +89,39 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {/* Total Owed */}
           <div 
-            className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-purple-200"
+            className={`rounded-lg border-2 ${totalCredits > 0.01 ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300' : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200'}`}
             style={{padding: '1.5rem', overflow: 'hidden'}}
           >
             <div className="flex items-center gap-2 mb-2" style={{overflow: 'hidden'}}>
-              <DollarSign className="text-purple-600" size={24} style={{flexShrink: 0}} />
-              <h3 className="font-semibold text-gray-700" style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>You Owe</h3>
+              <DollarSign className={totalCredits > 0.01 ? 'text-green-600' : 'text-purple-600'} size={24} style={{flexShrink: 0}} />
+              <h3 className="font-semibold text-gray-700" style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
+                {totalCredits > 0.01 ? 'You Have Credit' : 'You Owe'}
+              </h3>
             </div>
-            <p className="text-3xl font-bold text-purple-600" style={{wordBreak: 'break-word'}}>${totalOwed.toFixed(2)}</p>
-            <p className="text-sm text-gray-600 mt-1" style={{whiteSpace: 'nowrap'}}>{myBills.filter(b => !b.iPaid).length} unpaid bills</p>
+            {totalCredits > 0.01 ? (
+              <>
+                <p className="text-3xl font-bold text-green-600" style={{wordBreak: 'break-word'}}>
+                  ${totalCredits.toFixed(2)}
+                </p>
+                <p className="text-sm text-gray-600 mt-1">Credit from overpayments</p>
+              </>
+            ) : totalOwed < 0.01 ? (
+              <>
+                <p className="text-3xl font-bold text-green-600" style={{wordBreak: 'break-word'}}>
+                  $0.00
+                </p>
+                <p className="text-sm text-gray-600 mt-1">All caught up! 🎉</p>
+              </>
+            ) : (
+              <>
+                <p className="text-3xl font-bold text-purple-600" style={{wordBreak: 'break-word'}}>
+                  ${totalOwed.toFixed(2)}
+                </p>
+                <p className="text-sm text-gray-600 mt-1" style={{whiteSpace: 'nowrap'}}>
+                  {myBills.filter(b => !b.iPaid).length} unpaid bills
+                </p>
+              </>
+            )}
           </div>
 
           {/* Items to Buy */}
@@ -145,7 +180,11 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
                       Due: {new Date(bill.dueDate + 'T00:00:00').toLocaleDateString()}
                     </p>
                     <p className="text-sm text-gray-600" style={{wordBreak: 'break-word'}}>
-                      Your share: {bill.myPercentage.toFixed(1)}% of ${bill.amount}
+                      {bill.myPercentage ? (
+                        `Your share: ${bill.myPercentage.toFixed(1)}% of $${bill.amount}`
+                      ) : (
+                        `Your share: $${bill.myDollarAmount.toFixed(2)} of $${bill.amount}`
+                      )}
                     </p>
                     {bill.iPaid && bill.paidDate && (
                       <p className="text-xs text-green-600 mt-1" style={{wordBreak: 'break-word'}}>
@@ -199,7 +238,7 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
                 <p className="font-semibold" style={{wordBreak: 'break-word'}}>{task.title}</p>
                 {task.dueDate && (
                   <p className="text-sm text-gray-600" style={{wordBreak: 'break-word'}}>
-                    Due: {new Date(task.dueDate + 'T00:00:00').toLocaleDateString()}
+                    Due: {new Date(task.dueDate).toLocaleDateString()}
                   </p>
                 )}
               </div>
@@ -221,7 +260,7 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
               >
                 <p className="font-semibold" style={{wordBreak: 'break-word'}}>{event.title}</p>
                 <p className="text-sm text-gray-600" style={{wordBreak: 'break-word'}}>
-                  {new Date(event.date + 'T00:00:00').toLocaleDateString()}
+                  {new Date(event.date).toLocaleDateString()}
                   {event.time && ` at ${event.time}`}
                 </p>
               </div>

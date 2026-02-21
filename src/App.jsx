@@ -340,6 +340,12 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentModalData, setPaymentModalData] = useState(null);
   const [editingPayment, setEditingPayment] = useState(null);
+  const [paymentModalMode, setPaymentModalMode] = useState('log'); // 'log' or 'view'
+  
+  // Date filter state
+  const [dateFilterFrom, setDateFilterFrom] = useState('');
+  const [dateFilterTo, setDateFilterTo] = useState('');
+  const [showDateFilter, setShowDateFilter] = useState(false);
 
   useEffect(() => {
     loadUsers();
@@ -743,7 +749,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
   };
 
   // User payment tracking functions
-  const openPaymentModal = (billId, userId, bill) => {
+  const openPaymentModal = (billId, userId, bill, mode = 'log') => {
     const userSplit = bill.splits[userId];
     let amountOwed;
     if (userSplit <= 100) {
@@ -759,14 +765,25 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
       amountOwed,
       currentPayments: bill.payments?.[userId]?.paymentHistory || []
     });
+    setPaymentModalMode(mode);
     setShowPaymentModal(true);
   };
 
   const addUserPayment = (amount, date, note) => {
     const { billId, userId } = paymentModalData;
     
-    // Only allow users to add their own payments
-    if (profile.id !== userId) {
+    // Validate date is not in the future
+    const paymentDate = new Date(date + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (paymentDate > today) {
+      alert('Cannot log payment for a future date. Payments can only be logged for today or past dates.');
+      return;
+    }
+    
+    // Allow users to add their own payments OR admins to add for anyone
+    if (profile.id !== userId && !isAdmin) {
       alert('You can only add payments for yourself');
       return;
     }
@@ -783,7 +800,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
           amount: parseFloat(amount),
           date: date,
           note: note || '',
-          addedBy: userId,
+          addedBy: profile.id,  // Track who added it
           addedAt: new Date().toISOString()
         };
 
@@ -804,7 +821,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
           ...userPayment,
           paymentHistory: newHistory,
           totalPaid: newTotalPaid,
-          paid: newTotalPaid >= amountOwed - 0.01,  // Consider paid if within 1 cent
+          paid: newTotalPaid >= amountOwed - 0.01,
           paidDate: newTotalPaid >= amountOwed - 0.01 ? date : null,
           amountPaid: newTotalPaid
         };
@@ -836,10 +853,87 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
     });
   };
 
+  const updateUserPayment = (paymentId, amount, date, note) => {
+    const { billId, userId } = paymentModalData;
+    
+    // Validate date is not in the future
+    const paymentDate = new Date(date + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (paymentDate > today) {
+      alert('Cannot log payment for a future date. Payments can only be logged for today or past dates.');
+      return;
+    }
+    
+    // Allow users to edit their own payments OR admins to edit anyone's
+    if (profile.id !== userId && !isAdmin) {
+      alert('You can only edit your own payments');
+      return;
+    }
+
+    const updated = bills.map(bill => {
+      if (bill.id === billId) {
+        const userPayment = bill.payments[userId];
+        
+        // Update the specific payment in history
+        const newHistory = userPayment.paymentHistory.map(p => 
+          p.id === paymentId 
+            ? { ...p, amount: parseFloat(amount), date: date, note: note || '', editedAt: new Date().toISOString() }
+            : p
+        );
+        
+        const newTotalPaid = newHistory.reduce((sum, p) => sum + p.amount, 0);
+        
+        // Calculate amount owed
+        const userSplit = bill.splits[userId];
+        let amountOwed;
+        if (userSplit <= 100) {
+          amountOwed = (bill.amount * userSplit) / 100;
+        } else {
+          amountOwed = userSplit;
+        }
+
+        const newPayments = { ...bill.payments };
+        newPayments[userId] = {
+          ...userPayment,
+          paymentHistory: newHistory,
+          totalPaid: newTotalPaid,
+          paid: newTotalPaid >= amountOwed - 0.01,
+          paidDate: newTotalPaid >= amountOwed - 0.01 ? (newHistory.length > 0 ? newHistory[newHistory.length - 1].date : null) : null,
+          amountPaid: newTotalPaid
+        };
+
+        // Check if all users have paid
+        const allPaid = Object.keys(bill.splits).every(uid => 
+          newPayments[uid]?.paid === true
+        );
+
+        return {
+          ...bill,
+          payments: newPayments,
+          paid: allPaid
+        };
+      }
+      return bill;
+    });
+
+    setBills(updated);
+    saveData({ bills: updated });
+    addActivity(`Payment updated for ${paymentModalData.billName}`);
+    
+    // Update modal data
+    const updatedBill = updated.find(b => b.id === billId);
+    setPaymentModalData({
+      ...paymentModalData,
+      currentPayments: updatedBill.payments[userId]?.paymentHistory || []
+    });
+  };
+
   const deleteUserPayment = (paymentId) => {
     const { billId, userId } = paymentModalData;
     
-    // Only allow users to delete their own payments (or admin)
+    // Allow users to delete their own payments OR admins to delete anyone's
     if (profile.id !== userId && !isAdmin) {
       alert('You can only delete your own payments');
       return;
@@ -989,17 +1083,154 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
     return new Date(paidDate + 'T00:00:00').toLocaleDateString();
   };
 
+  // Generate recurring bill instances for next 6 months
+  const generateRecurringInstances = (bills) => {
+    const instances = [];
+    const today = new Date();
+    const sixMonthsOut = new Date();
+    sixMonthsOut.setMonth(sixMonthsOut.getMonth() + 6);
+    
+    bills.forEach(bill => {
+      // Add the original bill
+      instances.push({ ...bill, isRecurringInstance: false });
+      
+      // If recurring, generate future instances
+      if (bill.recurring && bill.recurrenceType) {
+        let currentDate = new Date(bill.dueDate);
+        
+        while (true) {
+          // Calculate next due date
+          const nextDate = new Date(currentDate);
+          
+          switch(bill.recurrenceType) {
+            case 'weekly':
+              nextDate.setDate(nextDate.getDate() + 7);
+              break;
+            case 'monthly':
+              nextDate.setMonth(nextDate.getMonth() + 1);
+              break;
+            case 'yearly':
+              nextDate.setFullYear(nextDate.getFullYear() + 1);
+              break;
+          }
+          
+          // Stop if we've gone past 6 months
+          if (nextDate > sixMonthsOut) break;
+          
+          // Create instance
+          const year = nextDate.getFullYear();
+          const month = String(nextDate.getMonth() + 1).padStart(2, '0');
+          const day = String(nextDate.getDate()).padStart(2, '0');
+          const dueDateStr = `${year}-${month}-${day}`;
+          
+          instances.push({
+            ...bill,
+            id: `${bill.id}-${dueDateStr}`, // Unique ID for instance
+            dueDate: dueDateStr,
+            isRecurringInstance: true,
+            originalBillId: bill.id,
+            paid: false, // Future instances aren't paid yet
+            payments: {} // Reset payments for future instance
+          });
+          
+          currentDate = nextDate;
+        }
+      }
+    });
+    
+    return instances;
+  };
+
+  // Generate all bill instances (including recurring)
+  const allBillInstances = generateRecurringInstances(bills);
+  
+  // Apply date filter if enabled
+  let filteredBills = allBillInstances;
+  if (showDateFilter && (dateFilterFrom || dateFilterTo)) {
+    filteredBills = allBillInstances.filter(bill => {
+      const billDate = new Date(bill.dueDate);
+      
+      if (dateFilterFrom && dateFilterTo) {
+        const from = new Date(dateFilterFrom);
+        const to = new Date(dateFilterTo);
+        return billDate >= from && billDate <= to;
+      } else if (dateFilterFrom) {
+        const from = new Date(dateFilterFrom);
+        return billDate >= from;
+      } else if (dateFilterTo) {
+        const to = new Date(dateFilterTo);
+        return billDate <= to;
+      }
+      
+      return true;
+    });
+  }
+  
+  // Sort chronologically by due date
+  const chronologicalBills = filteredBills.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+  
   const unpaidBills = bills.filter(b => !b.paid).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
   const paidBills = bills.filter(b => b.paid).sort((a, b) => new Date(b.paidDate) - new Date(a.paidDate));
 
   return (
     <div className="bg-white rounded-lg shadow-lg" style={{padding: '3rem', overflow: 'hidden'}}>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <h2 className="text-xl md:text-2xl font-bold">Bills & Expenses</h2>
-        {isAdmin && (
-          <button onClick={() => setShow(true)} className="px-5 md:px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm md:text-base whitespace-nowrap flex-shrink-0 min-w-[110px]">+ Add Bill</button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          <button 
+            onClick={() => setShowDateFilter(!showDateFilter)} 
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm whitespace-nowrap"
+          >
+            {showDateFilter ? '✕ Hide Filter' : '📅 Filter by Date'}
+          </button>
+          {isAdmin && (
+            <button onClick={() => setShow(true)} className="px-5 md:px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm md:text-base whitespace-nowrap flex-shrink-0 min-w-[110px]">+ Add Bill</button>
+          )}
+        </div>
       </div>
+
+      {/* Date Filter UI */}
+      {showDateFilter && (
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+              <input
+                type="date"
+                value={dateFilterFrom}
+                onChange={(e) => setDateFilterFrom(e.target.value)}
+                className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                style={{padding: '10px'}}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+              <input
+                type="date"
+                value={dateFilterTo}
+                onChange={(e) => setDateFilterTo(e.target.value)}
+                className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                style={{padding: '10px'}}
+              />
+            </div>
+            <button
+              onClick={() => {
+                setDateFilterFrom('');
+                setDateFilterTo('');
+              }}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
+              style={{padding: '10px'}}
+            >
+              Clear Filter
+            </button>
+          </div>
+          <p className="text-xs text-gray-600 mt-2">
+            {dateFilterFrom || dateFilterTo ? 
+              `Showing bills from ${dateFilterFrom || 'beginning'} to ${dateFilterTo || 'end'}` : 
+              'Enter dates to filter bills'}
+          </p>
+        </div>
+      )}
 
       {show && isAdmin && (
         <div className="mb-6 p-4 md:p-6 bg-purple-50 rounded-lg">
@@ -1304,10 +1535,10 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
               </div>
             </div>
 
-            {/* Add New Payment Form */}
-            {!editingPayment && (
+            {/* Add New Payment Form - Only in Log Mode */}
+            {!editingPayment && paymentModalMode === 'log' && (
               <div className="bg-gray-50 border-2 border-gray-200 rounded-lg mb-6" style={{padding: '1.5rem'}}>
-                <h4 className="font-semibold text-gray-700 mb-3">Add Payment</h4>
+                <h4 className="font-semibold text-gray-700 mb-3">Log New Payment</h4>
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -1327,6 +1558,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                       <input
                         type="date"
                         id="payment-date"
+                        max={new Date().toISOString().split('T')[0]}
                         className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                         style={{padding: '10px'}}
                         defaultValue={new Date().toISOString().split('T')[0]}
@@ -1392,6 +1624,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                       <input
                         type="date"
                         id="edit-payment-date"
+                        max={new Date().toISOString().split('T')[0]}
                         defaultValue={editingPayment.date}
                         className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                         style={{padding: '10px'}}
@@ -1420,9 +1653,8 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                           return;
                         }
                         
-                        // Delete old payment and add updated one
-                        deleteUserPayment(editingPayment.id);
-                        addUserPayment(amount, date, note);
+                        // Update the payment (not delete+add)
+                        updateUserPayment(editingPayment.id, amount, date, note);
                         setEditingPayment(null);
                       }}
                       className="flex-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
@@ -1775,16 +2007,22 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                                   <span className="text-xs md:text-sm text-gray-600 ml-2">
                                     {splitValue <= 100 ? `(${splitValue}% = $${userAmount.toFixed(2)})` : `($${splitValue.toFixed(2)})`}
                                   </span>
-                                  {/* Show partial payment progress */}
-                                  {!userPayment.paid && userPayment.totalPaid > 0 && (
+                                  {/* Show payment progress bar - always for unpaid */}
+                                  {!userPayment.paid && (
                                     <div className="mt-1">
-                                      <span className="text-xs text-blue-600 font-semibold">
-                                        Partial: ${userPayment.totalPaid.toFixed(2)} of ${userAmount.toFixed(2)}
-                                      </span>
+                                      {userPayment.totalPaid > 0 ? (
+                                        <span className="text-xs text-blue-600 font-semibold">
+                                          Partial: ${userPayment.totalPaid.toFixed(2)} of ${userAmount.toFixed(2)}
+                                        </span>
+                                      ) : (
+                                        <span className="text-xs text-gray-500">
+                                          No payments yet
+                                        </span>
+                                      )}
                                       <div className="w-32 h-2 bg-gray-200 rounded-full mt-1">
                                         <div 
-                                          className="h-2 bg-blue-500 rounded-full"
-                                          style={{width: `${Math.min(100, (userPayment.totalPaid / userAmount) * 100)}%`}}
+                                          className="h-2 bg-blue-500 rounded-full transition-all"
+                                          style={{width: `${Math.min(100, (userPayment.totalPaid || 0) / userAmount * 100)}%`}}
                                         ></div>
                                       </div>
                                     </div>
@@ -1807,22 +2045,37 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                                 <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                                   {isAdmin && (
                                     <button
-                                      onClick={() => markUserPaid(b.id, userId)}
+                                      onClick={() => {
+                                        if (confirm(`Mark ${getUserName(userId)}'s payment as fully paid?`)) {
+                                          markUserPaid(b.id, userId);
+                                        }
+                                      }}
                                       className="bg-green-600 text-white text-xs md:text-sm rounded hover:bg-green-700 whitespace-nowrap"
                                       style={{padding: '8px 16px'}}
                                     >
                                       ✓ Mark Paid
                                     </button>
                                   )}
-                                  {profile && profile.id === userId && (
-                                    <button
-                                      onClick={() => openPaymentModal(b.id, userId, b)}
-                                      className="bg-blue-600 text-white text-xs md:text-sm rounded hover:bg-blue-700 whitespace-nowrap"
-                                      style={{padding: '8px 16px'}}
-                                    >
-                                      💸 Track Payment
-                                    </button>
-                                  )}
+                                  {(profile && profile.id === userId) || isAdmin ? (
+                                    <>
+                                      <button
+                                        onClick={() => openPaymentModal(b.id, userId, b, 'log')}
+                                        className="bg-blue-600 text-white text-xs md:text-sm rounded hover:bg-blue-700 whitespace-nowrap"
+                                        style={{padding: '8px 16px'}}
+                                      >
+                                        💵 Log Payment
+                                      </button>
+                                      {(userPayment.paymentHistory && userPayment.paymentHistory.length > 0) && (
+                                        <button
+                                          onClick={() => openPaymentModal(b.id, userId, b, 'view')}
+                                          className="bg-purple-600 text-white text-xs md:text-sm rounded hover:bg-purple-700 whitespace-nowrap"
+                                          style={{padding: '8px 16px'}}
+                                        >
+                                          📊 Check Payments
+                                        </button>
+                                      )}
+                                    </>
+                                  ) : null}
                                 </div>
                               )}
                               {userPayment.paid && (
@@ -1848,7 +2101,11 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                                   )}
                                   {isAdmin && (
                                     <button
-                                      onClick={() => unmarkUserPaid(b.id, userId)}
+                                      onClick={() => {
+                                        if (confirm(`Unmark ${getUserName(userId)}'s payment? This will set it back to unpaid.`)) {
+                                          unmarkUserPaid(b.id, userId);
+                                        }
+                                      }}
                                       className="bg-gray-400 text-white text-xs rounded hover:bg-gray-500 whitespace-nowrap"
                                       style={{padding: '8px 16px'}}
                                     >
