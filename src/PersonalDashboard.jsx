@@ -7,6 +7,20 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
 
   if (!profile) return null;
 
+  // Helper to format paid date
+  const formatPaidDate = (paidDate) => {
+    if (!paidDate) return 'Invalid Date';
+    
+    // If it already has a 'T' in it, it's an ISO timestamp - just use the date part
+    if (paidDate.includes('T')) {
+      const dateOnly = paidDate.split('T')[0];
+      return new Date(dateOnly + 'T00:00:00').toLocaleDateString();
+    }
+    
+    // Otherwise it's YYYY-MM-DD format, add time to make it local
+    return new Date(paidDate + 'T00:00:00').toLocaleDateString();
+  };
+
   // Calculate what this user owes
   const unpaidBills = bills.filter(b => !b.paid);
   let totalOwed = 0;
@@ -15,14 +29,18 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
   const myBills = [];
 
   unpaidBills.forEach(bill => {
-    if (bill.splits && bill.splits[profile.id]) {
+    if (bill.splits && bill.splits[profile.id] && bill.amount) {
       const splitValue = parseFloat(bill.splits[profile.id]);
+      const billAmount = parseFloat(bill.amount);
+      
+      // Skip if invalid values
+      if (isNaN(splitValue) || isNaN(billAmount)) return;
       
       // Calculate amount owed based on split type
       let amountOwed;
       if (splitValue <= 100) {
         // Percentage split
-        amountOwed = (bill.amount * splitValue) / 100;
+        amountOwed = (billAmount * splitValue) / 100;
       } else {
         // Dollar split
         amountOwed = splitValue;
@@ -30,13 +48,13 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
       
       const myPayment = bill.payments?.[profile.id];
       const iPaid = myPayment?.paid || false;
-      const amountPaid = myPayment?.totalPaid || myPayment?.amountPaid || 0;
+      const amountPaid = parseFloat(myPayment?.totalPaid || myPayment?.amountPaid || 0);
       
       if (!iPaid) {
         // Track partial payments
         if (amountPaid > 0) {
           totalPaid += amountPaid;
-          totalOwed += (amountOwed - amountPaid);
+          totalOwed += Math.max(0, amountOwed - amountPaid);
         } else {
           totalOwed += amountOwed;
         }
