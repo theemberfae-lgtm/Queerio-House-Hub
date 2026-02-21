@@ -1179,7 +1179,8 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
         <div className="flex flex-wrap gap-2">
           <button 
             onClick={() => setShowDateFilter(!showDateFilter)} 
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm whitespace-nowrap"
+            className="bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm md:text-base whitespace-nowrap"
+            style={{padding: '8px 16px'}}
           >
             {showDateFilter ? '✕ Hide Filter' : '📅 Filter by Date'}
           </button>
@@ -1734,11 +1735,20 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
         </div>
       )}
 
-      {unpaidBills.length > 0 && (
+      {/* Chronological Bill List - Everyone Can See */}
+      {chronologicalBills.length > 0 && (
         <>
-          <h3 className="text-base md:text-lg font-semibold mb-3 text-gray-700">Unpaid Bills</h3>
+          <h3 className="text-base md:text-lg font-semibold mb-3 text-gray-700">
+            All Bills (Chronological by Due Date)
+            {showDateFilter && (dateFilterFrom || dateFilterTo) && (
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                (Filtered: {chronologicalBills.length} bills)
+              </span>
+            )}
+          </h3>
           <div className="space-y-3 mb-6">
-            {unpaidBills.map(b => {
+            {chronologicalBills.map(b => {
+              // Initialize payments if missing
               if (!b.payments && b.splits) {
                 b.payments = {};
                 Object.keys(b.splits).forEach(userId => {
@@ -1752,8 +1762,22 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                 });
               }
               
+              // Mark if this is a future recurring instance
+              const isFutureInstance = b.isRecurringInstance && new Date(b.dueDate) > new Date();
+              
               return (
-                <div key={b.id} className="rounded-lg border-2 bg-gray-50 border-gray-200" style={{padding: '1.5rem', overflow: 'hidden'}}>
+                <div 
+                  key={b.id} 
+                  className={`rounded-lg border-2 ${b.paid ? 'bg-green-50 border-green-300' : isFutureInstance ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}
+                  style={{padding: '1.5rem', overflow: 'hidden'}}
+                >
+                  {isFutureInstance && (
+                    <div className="mb-2">
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                        📅 Future Instance (Recurring)
+                      </span>
+                    </div>
+                  )}
                   {editingBill === b.id ? (
                     // EDIT MODE
                     <div className="space-y-4">
@@ -1937,19 +1961,19 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                   ) : (
                     // NORMAL VIEW
                     <><div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-3">
-                    <div style={{flex: 1, minWidth: 0}}>
+                    <div className="w-full md:flex-1" style={{minWidth: 0, overflow: 'hidden'}}>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-bold text-base md:text-lg" style={{wordBreak: 'break-word'}}>{b.category}</h3>
+                        <h3 className="font-bold text-base md:text-lg break-words" style={{maxWidth: '100%'}}>{b.category}</h3>
                         {b.recurring && (
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded whitespace-nowrap">
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded whitespace-nowrap flex-shrink-0">
                             {getRecurrenceLabel(b.recurrenceType)}
                           </span>
                         )}
                       </div>
                       <p className="text-xs md:text-sm text-gray-600 mt-1">Due: {new Date(b.dueDate + 'T00:00:00').toLocaleDateString()}</p>
                     </div>
-                    <div className="text-right" style={{flexShrink: 0}}>
-                      <p className="text-lg md:text-xl font-bold text-purple-600 mb-2">${b.amount}</p>
+                    <div className="text-right w-full md:w-auto" style={{flexShrink: 0}}>
+                      <p className="text-lg md:text-xl font-bold text-purple-600 mb-2">${b.amount.toFixed(2)}</p>
                       {isAdmin && !b.paid && (
                         <div className="flex gap-2 justify-end">
                           <button 
@@ -1997,16 +2021,18 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                           const overpaymentAmount = hasOverpayment ? amountPaid - userAmount : 0;
                           
                           return (
-                            <div key={userId} className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-2 rounded ${userPayment.paid ? (hasOverpayment ? 'bg-yellow-50 border border-yellow-300' : 'bg-green-50 border border-green-200') : 'bg-white border border-gray-200'}`} style={{padding: '0.75rem'}}>
-                              <div className="flex items-center gap-3">
-                                <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${userPayment.paid ? (hasOverpayment ? 'bg-yellow-500' : 'bg-green-500') : 'bg-gray-300'}`}>
+                            <div key={userId} className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-3 rounded ${userPayment.paid ? (hasOverpayment ? 'bg-yellow-50 border border-yellow-300' : 'bg-green-50 border border-green-200') : 'bg-white border border-gray-200'}`} style={{padding: '0.75rem'}}>
+                              <div className="flex items-start gap-3 w-full md:flex-1" style={{minWidth: 0}}>
+                                <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 mt-0.5 ${userPayment.paid ? (hasOverpayment ? 'bg-yellow-500' : 'bg-green-500') : 'bg-gray-300'}`}>
                                   {userPayment.paid && <span className="text-white text-xs">{hasOverpayment ? '!' : '✓'}</span>}
                                 </div>
-                                <div>
-                                  <span className="font-medium text-sm md:text-base" style={{wordBreak: 'break-word'}}>{getUserName(userId)}</span>
-                                  <span className="text-xs md:text-sm text-gray-600 ml-2">
-                                    {splitValue <= 100 ? `(${splitValue}% = $${userAmount.toFixed(2)})` : `($${splitValue.toFixed(2)})`}
-                                  </span>
+                                <div className="flex-1" style={{minWidth: 0, overflow: 'hidden'}}>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="font-medium text-sm md:text-base break-words">{getUserName(userId)}</span>
+                                    <span className="text-xs md:text-sm text-gray-600 whitespace-nowrap">
+                                      {splitValue <= 100 ? `(${splitValue}% = $${userAmount.toFixed(2)})` : `($${splitValue.toFixed(2)})`}
+                                    </span>
+                                  </div>
                                   {/* Show payment progress bar - always for unpaid */}
                                   {!userPayment.paid && (
                                     <div className="mt-1">
@@ -2129,37 +2155,6 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
         </>
       )}
 
-      {paidBills.length > 0 && (
-        <>
-          <h3 className="text-base md:text-lg font-semibold mb-3 text-gray-700">Paid Bills</h3>
-          <div className="space-y-3">
-            {paidBills.map(b => (
-              <div key={b.id} className="rounded-lg border-2 bg-green-50 border-green-300" style={{padding: '1.5rem', overflow: 'hidden'}}>
-                <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-                  <div style={{flex: 1, minWidth: 0}}>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-bold text-sm md:text-base" style={{wordBreak: 'break-word'}}>{b.category}</h3>
-                      <span className="text-xs bg-green-200 px-2 py-1 rounded whitespace-nowrap">Paid</span>
-                      {b.recurring && (
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded whitespace-nowrap">
-                          {getRecurrenceLabel(b.recurrenceType)}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs md:text-sm text-gray-600">Paid on: {formatPaidDate(b.paidDate)}</p>
-                  </div>
-                  <div className="text-right" style={{flexShrink: 0}}>
-                    <p className="text-lg md:text-xl font-bold text-gray-600">${b.amount}</p>
-                    {isAdmin && (
-                      <button onClick={() => del(b.id)} className="px-4 py-1 bg-red-500 text-white text-xs md:text-sm rounded hover:bg-red-600 mt-2 whitespace-nowrap min-w-[70px]">Delete</button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
 
       {bills.length === 0 && (
         <p className="text-center text-gray-500 py-8 text-sm md:text-base">No bills yet. {isAdmin && 'Add one to get started!'}</p>

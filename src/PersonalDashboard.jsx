@@ -181,9 +181,11 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
                     </p>
                     <p className="text-sm text-gray-600" style={{wordBreak: 'break-word'}}>
                       {bill.myPercentage ? (
-                        `Your share: ${bill.myPercentage.toFixed(1)}% of $${bill.amount}`
+                        `Your share: ${bill.myPercentage.toFixed(1)}% of $${bill.amount.toFixed(2)}`
+                      ) : bill.myDollarAmount ? (
+                        `Your share: $${bill.myDollarAmount.toFixed(2)} of $${bill.amount.toFixed(2)}`
                       ) : (
-                        `Your share: $${bill.myDollarAmount.toFixed(2)} of $${bill.amount}`
+                        `Your share: $${(bill.myShare || 0).toFixed(2)}`
                       )}
                     </p>
                     {bill.iPaid && bill.paidDate && (
