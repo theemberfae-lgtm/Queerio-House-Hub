@@ -1509,13 +1509,26 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
         </div>
       )}
 
-      {/* User Payment Tracking Modal */}
+      {/* User Payment Tracking - Inline Section */}
       {showPaymentModal && paymentModalData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" style={{padding: '2rem'}}>
-            <h2 className="text-xl md:text-2xl font-bold text-purple-600 mb-2">💸 Payment Tracker</h2>
-            <h3 className="text-base md:text-lg text-gray-700 mb-4">{paymentModalData.billName}</h3>
-            
+        <div className="mb-6 bg-white rounded-lg shadow-lg border-2 border-purple-300" style={{padding: '2rem'}}>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
+            <div>
+              <h2 className="text-xl md:text-2xl font-bold text-purple-600">💸 Payment Tracker</h2>
+              <h3 className="text-base md:text-lg text-gray-700">{paymentModalData.billName}</h3>
+            </div>
+            <button
+              onClick={() => {
+                setShowPaymentModal(false);
+                setPaymentModalData(null);
+                setEditingPayment(null);
+              }}
+              className="bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-semibold text-sm md:text-base"
+              style={{padding: '8px 16px'}}
+            >
+              ✕ Close
+            </button>
+          </div>
             {/* Amount Summary */}
             <div className="bg-purple-50 border-2 border-purple-200 rounded-lg mb-6" style={{padding: '1.5rem'}}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1724,20 +1737,6 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                 </div>
               )}
             </div>
-
-            {/* Close Button */}
-            <button
-              onClick={() => {
-                setShowPaymentModal(false);
-                setPaymentModalData(null);
-                setEditingPayment(null);
-              }}
-              className="w-full bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-semibold"
-              style={{padding: '14px'}}
-            >
-              Close
-            </button>
-          </div>
         </div>
       )}
 
