@@ -310,7 +310,7 @@ const App = () => {
 };
 
 const Bills = ({ bills, setBills, saveData, addActivity }) => {
-  const { supabase, isAdmin } = useAuth();
+  const { supabase, isAdmin, profile } = useAuth();
   const [show, setShow] = useState(false);
   const [cat, setCat] = useState('');
   const [amt, setAmt] = useState('');
@@ -764,7 +764,6 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
 
   const addUserPayment = (amount, date, note) => {
     const { billId, userId } = paymentModalData;
-    const { profile } = useAuth();
     
     // Only allow users to add their own payments
     if (profile.id !== userId) {
@@ -839,7 +838,6 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
 
   const deleteUserPayment = (paymentId) => {
     const { billId, userId } = paymentModalData;
-    const { profile } = useAuth();
     
     // Only allow users to delete their own payments (or admin)
     if (profile.id !== userId && !isAdmin) {
