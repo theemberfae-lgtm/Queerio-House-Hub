@@ -4,12 +4,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth, supabase } from './AuthContext';
 import Login from './Login';
 import Signup from './Signup';
-import AdminUsers from './AdminUsers';
-import AdminSettings from './AdminSettings';
 import PersonalDashboard from './PersonalDashboard';
 import UserProfile from './UserProfile';
 import RoommatesDirectory from './RoommatesDirectory';
-import AdminProfileEditor from './AdminProfileEditor';
+import AdminSettingsUnified from './AdminSettingsUnified';
 
 const App = () => {
   const { profile, signOut, isAdmin } = useAuth();
@@ -207,7 +205,53 @@ const App = () => {
     console.log('Admin made changes, reloading data...');
     loadData();
   };
+// Helper to get user name from ID
+const getUserName = (userId) => {
+  if (!userId) return 'Unknown User';
+  
+  // If userId is already a name from old system, return it
+  if (roommates.includes(userId)) return userId;
+  
+  // Check if it's current user
+  if (profile?.id === userId) return profile.name || profile.email;
+  
+  // Fallback
+  return `User ${userId.substring(0, 8)}`;
+};
 
+// Get all users
+const getAllUsers = () => {
+  return roommates.map(name => ({
+    id: name,
+    name: name,
+    email: `${name.toLowerCase()}@example.com`
+  }));
+};
+
+// Validate rotation
+const validateRotation = (rotation) => {
+  if (!Array.isArray(rotation)) {
+    return { valid: false, errors: ['Rotation must be an array'] };
+  }
+  
+  if (rotation.length === 0) {
+    return { valid: false, errors: ['Rotation cannot be empty'] };
+  }
+  
+  const errors = [];
+  const validNames = roommates;
+  
+  rotation.forEach((userId, index) => {
+    if (!validNames.includes(userId)) {
+      errors.push(`Position ${index + 1}: "${userId}" not found in current users`);
+    }
+  });
+  
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+};
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 flex justify-center" style={{paddingBottom: '144px'}}>
       <div className="w-full max-w-6xl px-4 md:px-16 py-4 md:py-8">
@@ -262,12 +306,25 @@ const App = () => {
         {activeTab === 'profile' && <UserProfile />}
         {activeTab === 'roommates' && <RoommatesDirectory />}
         {activeTab === 'bills' && <Bills bills={bills} setBills={setBills} saveData={saveData} addActivity={addActivity} />}
-        {activeTab === 'items' && <Items items={items} setItems={setItems} saveData={saveData} addActivity={addActivity} colors={colors} selectedItem={selectedItem} setSelectedItem={setSelectedItem} />}
+        {activeTab === 'items' && (
+  <Items 
+    items={items} 
+    setItems={setItems} 
+    saveData={saveData} 
+    addActivity={addActivity} 
+    colors={colors} 
+    selectedItem={selectedItem} 
+    setSelectedItem={setSelectedItem}
+    users={roommates}
+    getUserName={getUserName}
+    validateRotation={validateRotation}
+    isAdmin={isAdmin}
+    currentUserId={profile?.id}
+  />
+)}
         {activeTab === 'tasks' && <Tasks monthlyChores={monthlyChores} setMonthlyChores={setMonthlyChores} oneOffTasks={oneOffTasks} setOneOffTasks={setOneOffTasks} saveData={saveData} addActivity={addActivity} colors={colors} roommates={roommates} showForm={showForm} setShowForm={setShowForm} selectedItem={selectedItem} setSelectedItem={setSelectedItem} currentMonth={currentMonth} choreHistory={choreHistory} setChoreHistory={setChoreHistory} />}
-        {activeTab === 'events' && <Events events={events} setEvents={setEvents} saveData={saveData} addActivity={addActivity} showForm={showForm} setShowForm={setShowForm} />}
-        {activeTab === 'admin' && <AdminUsers />}
-        {activeTab === 'admin-profiles' && <AdminProfileEditor />}
-        {activeTab === 'settings' && <AdminSettings onDataChange={forceReload} />}
+        {activeTab === 'events' && <Events events={events} setEvents={setEvents} saveData={saveData} addActivity={addActivity} showForm={showForm} setShowForm={setShowForm} />}\
+        {activeTab === 'admin-settings' && <AdminSettingsUnified onDataChange={forceReload} />}
 
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg overflow-x-auto">
           <div className="flex justify-start md:justify-center items-center gap-2 md:gap-8 px-2 md:px-8 py-2 md:py-4 min-w-max md:min-w-0">
@@ -280,10 +337,8 @@ const App = () => {
               { id: 'roommates', icon: Users, label: 'Roommates' },
               { id: 'profile', icon: Settings, label: 'Profile' },
               ...(isAdmin ? [
-                { id: 'admin', icon: Users, label: 'Admin' },
-                { id: 'admin-profiles', icon: User, label: 'Edit Profiles' },
-                { id: 'settings', icon: Settings, label: 'Settings' }
-              ] : [])
+  { id: 'admin-settings', icon: Settings, label: 'Admin Settings' }
+] : [])
             ].map(tab => (
               <button 
                 key={tab.id} 
