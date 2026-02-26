@@ -2228,8 +2228,13 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
 // ============================================
 // Replace your existing Items component with this
 
-const Items = ({ items, setItems, saveData, addActivity, colors, selectedItem, setSelectedItem }) => {
+const Items = ({ items, setItems, saveData, addActivity, colors, selectedItem, setSelectedItem, users, getUserName, validateRotation, isAdmin: isAdminProp, currentUserId }) => {
   const { profile, isAdmin } = useAuth();
+  const [editingItem, setEditingItem] = useState(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    rotation: []
+  });
 
   const purchase = (itemId, person) => {
     const item = items.find(i => i.id === itemId);
@@ -2287,26 +2292,104 @@ const Items = ({ items, setItems, saveData, addActivity, colors, selectedItem, s
     purchase(itemId, profile.name);
   };
 
-  if (selectedItem) {
+// Start editing an item
+const startEditItem = (item) => {
+  setEditingItem(item.id);
+  setEditForm({
+    name: item.name,
+    rotation: [...item.rotation]
+  });
+};
+
+// Save item edits
+const saveItemEdit = () => {
+  if (!editForm.name.trim()) {
+    alert('Item name cannot be empty');
+    return;
+  }
+  
+  if (!editForm.rotation || editForm.rotation.length === 0) {
+    alert('Rotation must have at least one person');
+    return;
+  }
+  
+  const updated = items.map(item => {
+    if (item.id === editingItem) {
+      return {
+        ...item,
+        name: editForm.name.trim(),
+        rotation: editForm.rotation
+      };
+    }
+    return item;
+  });
+  
+  setItems(updated);
+  saveData({ items: updated });
+  addActivity(`Updated item: ${editForm.name}`);
+  setEditingItem(null);
+  setEditForm({ name: '', rotation: [] });
+};
+
+// Cancel editing
+const cancelEditItem = () => {
+  setEditingItem(null);
+  setEditForm({ name: '', rotation: [] });
+};
+
+// Add/remove user from rotation being edited
+const toggleUserInRotation = (userId) => {
+  setEditForm(prev => {
+    const newRotation = prev.rotation.includes(userId)
+      ? prev.rotation.filter(id => id !== userId)
+      : [...prev.rotation, userId];
+    return { ...prev, rotation: newRotation };
+  });
+};
+
+// Admin marks purchase for any user
+const adminMarkPurchase = (itemId, userId) => {
+  if (!isAdmin) {
+    alert('Admin only');
+    return;
+  }
+  purchase(itemId, userId);
+};
+   if (selectedItem) {
     return (
       <div className="bg-white rounded-lg shadow-lg" style={{padding: '3rem', overflow: 'hidden'}}>
         <h2 className="text-xl md:text-2xl font-bold mb-4">Mark Item as Purchased</h2>
-        <p className="text-center mb-6 text-sm md:text-base">
+        
+        <p className="text-center mb-2 text-sm md:text-base">
           Who purchased <span className="font-bold text-purple-600">{selectedItem.name}</span>?
         </p>
+        
+        {isAdmin && (
+          <div className="text-center mb-4 bg-blue-50 border border-blue-200 rounded-lg" style={{padding: '8px'}}>
+            <p className="text-xs md:text-sm text-blue-700">
+              🛡️ <strong>Admin:</strong> You can mark purchase for any user
+            </p>
+          </div>
+        )}
+        
         <div className="space-y-2 max-w-xs mx-auto">
-          {selectedItem.rotation.map(p => (
-            <button 
-              key={p} 
-              onClick={() => purchase(selectedItem.id, p)} 
-              className={`w-full rounded-lg text-white text-sm md:text-base whitespace-nowrap min-h-[48px] flex items-center justify-center ${
-                colors[p].replace('text-', 'bg-').replace('200', '500')
-              }`}
-              style={{padding: '12px 20px'}}
-            >
-              {p}
-            </button>
-          ))}
+          {selectedItem.rotation.map(userId => {
+            const displayName = getUserName(userId);
+            const colorClass = colors[userId] || colors[displayName] || 'bg-gray-200 text-gray-800';
+            
+            return (
+              <button 
+                key={userId} 
+                onClick={() => purchase(selectedItem.id, userId)} 
+                className={`w-full rounded-lg text-white text-sm md:text-base whitespace-nowrap min-h-[48px] flex items-center justify-center ${
+                  colorClass.replace('text-', 'bg-').replace('200', '500')
+                }`}
+                style={{padding: '12px 20px'}}
+              >
+                {displayName}
+              </button>
+            );
+          })}
         </div>
         <div className="mt-4 space-y-2">
           <button 
@@ -2336,115 +2419,199 @@ const Items = ({ items, setItems, saveData, addActivity, colors, selectedItem, s
         {items.map(item => {
           const curr = item.rotation[item.currentIndex];
           const next = getNextPerson(item);
-          const isMyTurn = next === profile.name;
-          
+          const isMyTurn = next === profile.name || next === currentUserId || next === profile.id;
           return (
             <div key={item.id} className="bg-gray-50 rounded-lg border-2 border-gray-200" style={{padding: '1.5rem', overflow: 'hidden'}}>
-              <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-3">
-                <div className="flex-1 w-full" style={{minWidth: 0}}>
-                  <h3 className="font-bold text-base md:text-lg mb-3" style={{wordBreak: 'break-word'}}>{item.name}</h3>
+              {editingItem === item.id ? (
+                // EDIT MODE
+                <div className="space-y-4">
+                  <h3 className="font-bold text-lg text-blue-600 mb-4">✏️ Editing Item</h3>
                   
-                  {isMyTurn && (
-                    <div className="mb-3 bg-green-50 border-2 border-green-300 rounded" style={{padding: '0.75rem'}}>
-                      <p className="text-sm font-semibold text-green-800">
-                        ⭐ Your turn to buy this!
-                      </p>
-                    </div>
-                  )}
-                  
-                  <div className="mb-3">
-                    <p className="text-xs font-semibold text-gray-600 mb-2">Rotation Order:</p>
-                    <div className="flex flex-wrap items-center gap-2" style={{overflow: 'visible'}}>
-                      {item.rotation.map((person, idx) => {
-                        const isCurrent = idx === item.currentIndex;
-                        const isSkipped = item.skippedThisRound.includes(person);
+                  {/* Item Name Field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Item Name
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.name}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+                      style={{padding: '10px'}}
+                      placeholder="e.g., Toilet Paper"
+                    />
+                  </div>
+
+                  {/* Rotation Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Rotation ({editForm.rotation.length} selected)
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {users && users.map((userName) => {
+                        const userId = typeof userName === 'string' ? userName : userName.id;
+                        const displayName = typeof userName === 'string' ? userName : (userName.name || userName.email);
+                        const isSelected = editForm.rotation.includes(userId);
                         
                         return (
-                          <React.Fragment key={person}>
-                            <div 
-                              className={`rounded text-xs md:text-sm ${
-                                isCurrent 
-                                  ? `${colors[person]} font-bold border-2 border-purple-500`
-                                  : isSkipped
-                                  ? 'bg-gray-300 text-gray-500 line-through'
-                                  : colors[person]
-                              }`}
-                              style={{
-                                padding: '4px 12px',
-                                whiteSpace: 'nowrap',
-                                display: 'inline-block',
-                                overflow: 'hidden'
-                              }}
-                            >
-                              {person}
-                              {isCurrent && ' ⭐'}
-                              {isSkipped && ' (skipped)'}
-                            </div>
-                            {idx < item.rotation.length - 1 && (
-                              <span className="text-gray-400" style={{flexShrink: 0}}>→</span>
-                            )}
-                          </React.Fragment>
+                          <button
+                            key={userId}
+                            type="button"
+                            onClick={() => toggleUserInRotation(userId)}
+                            className={`rounded-lg font-medium text-sm md:text-base transition-colors ${
+                              isSelected
+                                ? 'bg-blue-500 text-white border-2 border-blue-600'
+                                : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-blue-300'
+                            }`}
+                            style={{padding: '10px'}}
+                          >
+                            {isSelected && '✓ '}{displayName}
+                          </button>
                         );
                       })}
                     </div>
-                  </div>
-                  
-                  {item.lastPurchase && (
-                    <p className="text-xs md:text-sm mb-1" style={{wordBreak: 'break-word'}}>
-                      Last purchased: <span 
-                        className={`rounded ${colors[item.lastPurchase.person]}`}
-                        style={{
-                          padding: '2px 8px',
-                          whiteSpace: 'nowrap',
-                          display: 'inline-block'
-                        }}
-                      >
-                        {item.lastPurchase.person}
-                      </span> on {new Date(item.lastPurchase.date + 'T00:00:00').toLocaleDateString()}
+                    <p className="text-xs text-gray-500 mt-2">
+                      Click to add/remove from rotation
                     </p>
-                  )}
-                  
-                  <p className="text-xs md:text-sm" style={{wordBreak: 'break-word'}}>
-                    Next up: <span 
-                      className={`rounded ${colors[next]}`}
-                      style={{
-                        padding: '2px 8px',
-                        whiteSpace: 'nowrap',
-                        display: 'inline-block'
-                      }}
-                    >{next}</span>
-                  </p>
-                  
-                  {item.skippedThisRound.length > 0 && (
-                    <div className="mt-2 bg-yellow-50 border border-yellow-300 rounded" style={{padding: '0.75rem'}}>
-                      <p className="text-xs text-yellow-800" style={{wordBreak: 'break-word'}}>
-                        <strong>Skipping this round:</strong> {item.skippedThisRound.join(', ')} (bought early)
-                      </p>
-                    </div>
-                  )}
-                </div>
-                
-                {/* ✅ UPDATED: Better padding on both buttons */}
-                <div className="flex flex-col gap-3" style={{flexShrink: 0}}>
-                  <button 
-                    onClick={() => quickMarkMyPurchase(item.id)} 
-                    className="bg-green-500 text-white rounded-lg hover:bg-green-600 whitespace-nowrap text-sm md:text-base min-w-[160px] font-medium"
-                    style={{padding: '12px 20px'}}
-                  >
-                    ✓ I Bought This
-                  </button>
-                  
-                  {isAdmin && (
-                    <button 
-                      onClick={() => setSelectedItem(item)} 
-                      className="bg-blue-500 text-white rounded-lg hover:bg-blue-600 whitespace-nowrap text-sm md:text-base min-w-[160px] font-medium"
-                      style={{padding: '12px 20px'}}
+                  </div>
+
+                  {/* Save/Cancel Buttons */}
+                  <div className="flex gap-3 pt-4 border-t border-gray-300">
+                    <button
+                      onClick={saveItemEdit}
+                      className="flex-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-sm md:text-base"
+                      style={{padding: '12px'}}
                     >
-                      Mark Purchased
+                      💾 Save Changes
                     </button>
-                  )}
+                    <button
+                      onClick={cancelEditItem}
+                      className="bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-semibold text-sm md:text-base"
+                      style={{padding: '12px 24px'}}
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                // NORMAL VIEW
+                <>
+                  <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-3">
+                    <div className="flex-1 w-full" style={{minWidth: 0}}>
+                      <h3 className="font-bold text-base md:text-lg mb-3" style={{wordBreak: 'break-word'}}>{item.name}</h3>
+                      
+                      {isMyTurn && (
+                        <div className="mb-3 bg-green-50 border-2 border-green-300 rounded" style={{padding: '0.75rem'}}>
+                          <p className="text-sm font-semibold text-green-800">
+                            ⭐ Your turn to buy this!
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="mb-3">
+                        <p className="text-xs font-semibold text-gray-600 mb-2">Rotation Order:</p>
+                        <div className="flex flex-wrap items-center gap-2" style={{overflow: 'visible'}}>
+                          {item.rotation.map((userId, idx) => {
+                            const isCurrent = idx === item.currentIndex;
+                            const isSkipped = item.skippedThisRound.includes(userId);
+                            const displayName = getUserName(userId);
+                            
+                            return (
+                              <React.Fragment key={userId}>
+                                <div 
+                                  className={`rounded text-xs md:text-sm ${
+                                    isCurrent 
+                                      ? `${colors[userId] || colors[displayName] || 'bg-gray-200 text-gray-800'} font-bold border-2 border-purple-500`
+                                      : isSkipped
+                                      ? 'bg-gray-300 text-gray-500 line-through'
+                                      : colors[userId] || colors[displayName] || 'bg-gray-200 text-gray-800'
+                                  }`}
+                                  style={{
+                                    padding: '4px 12px',
+                                    whiteSpace: 'nowrap',
+                                    display: 'inline-block',
+                                    overflow: 'hidden'
+                                  }}
+                                >
+                                  {displayName}
+                                  {isCurrent && ' ⭐'}
+                                  {isSkipped && ' (skipped)'}
+                                </div>
+                                {idx < item.rotation.length - 1 && (
+                                  <span className="text-gray-400" style={{flexShrink: 0}}>→</span>
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      
+                      {item.lastPurchase && (
+                        <p className="text-xs md:text-sm mb-1" style={{wordBreak: 'break-word'}}>
+                          Last purchased: <span 
+                            className={`rounded ${colors[item.lastPurchase.person] || colors[item.lastPurchase.userId] || colors[getUserName(item.lastPurchase.userId || item.lastPurchase.person)] || 'bg-gray-200 text-gray-800'}`}
+                            style={{
+                              padding: '2px 8px',
+                              whiteSpace: 'nowrap',
+                              display: 'inline-block'
+                            }}
+                          >
+                            {item.lastPurchase.userName || getUserName(item.lastPurchase.userId || item.lastPurchase.person)}
+                          </span> on {new Date(item.lastPurchase.date).toLocaleDateString()}
+                        </p>
+                      )}
+                      
+                      <p className="text-xs md:text-sm" style={{wordBreak: 'break-word'}}>
+                        Next up: <span 
+                          className={`rounded ${colors[next] || colors[getUserName(next)] || 'bg-gray-200 text-gray-800'}`}
+                          style={{
+                            padding: '2px 8px',
+                            whiteSpace: 'nowrap',
+                            display: 'inline-block'
+                          }}
+                        >{getUserName(next)}</span>
+                      </p>
+                      
+                      {item.skippedThisRound.length > 0 && (
+                        <div className="mt-2 bg-yellow-50 border border-yellow-300 rounded" style={{padding: '0.75rem'}}>
+                          <p className="text-xs text-yellow-800" style={{wordBreak: 'break-word'}}>
+                            <strong>Skipping this round:</strong> {item.skippedThisRound.map(userId => getUserName(userId)).join(', ')} (bought early)
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Buttons */}
+                    <div className="flex flex-col gap-3" style={{flexShrink: 0}}>
+                      <button 
+                        onClick={() => quickMarkMyPurchase(item.id)} 
+                        className="bg-green-500 text-white rounded-lg hover:bg-green-600 whitespace-nowrap text-sm md:text-base min-w-[160px] font-medium"
+                        style={{padding: '12px 20px'}}
+                      >
+                        ✓ I Bought This
+                      </button>
+                      {isAdmin && (
+                        <>
+                          <button 
+                            onClick={() => setSelectedItem(item)} 
+                            className="bg-purple-500 text-white rounded-lg hover:bg-purple-600 whitespace-nowrap text-sm md:text-base min-w-[160px] font-medium"
+                            style={{padding: '12px 20px'}}
+                          >
+                            Mark Purchased
+                          </button>
+                          <button 
+                            onClick={() => startEditItem(item)} 
+                            className="bg-blue-500 text-white rounded-lg hover:bg-blue-600 whitespace-nowrap text-sm md:text-base min-w-[160px] font-medium"
+                            style={{padding: '12px 20px'}}
+                          >
+✏️ Edit Item
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           );
         })}
@@ -2454,7 +2621,7 @@ const Items = ({ items, setItems, saveData, addActivity, colors, selectedItem, s
 };
 
 const Tasks = ({ 
-  monthlyChores, 
+  monthlyChores,
   setMonthlyChores, 
   oneOffTasks, 
   setOneOffTasks, 
@@ -2569,12 +2736,12 @@ const Tasks = ({
     saveData({ oneOffTasks: updated });
   };
 
-  if (selectedItem) {
+   if (selectedItem) {
     return (
       <div className="bg-white rounded-lg shadow-lg" style={{padding: '3rem', overflow: 'hidden'}}>
-        <h2 className="text-xl md:text-2xl font-bold mb-4">Mark Chore Complete</h2>
+        <h2 className="text-xl md:text-2xl font-bold mb-4">Complete Chore</h2>
         <p className="text-center mb-6 text-sm md:text-base">
-          Complete <span className="font-bold text-purple-600">{selectedItem.name}</span>?
+          Mark <span className="font-bold text-purple-600">{selectedItem.name}</span> as complete?
         </p>
         <div className="flex gap-2 justify-center">
           <button 
