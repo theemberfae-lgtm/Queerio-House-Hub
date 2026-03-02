@@ -272,10 +272,10 @@ const validateRotation = (rotation) => {
                 <span style={{wordBreak: 'break-word'}}>Queerio House Hub</span>
               </h1>
               <p className="text-gray-600 text-sm md:text-base" style={{wordBreak: 'break-word'}}>
-                {householdMembers.length > 0 
-                  ? `${householdMembers.join(', ')}${householdMembers.length === 1 ? "'s" : "'"} Home`
-                  : "Loading..."}
-              </p>
+  {householdMembers.length > 0 
+    ? `${householdMembers.join(', ')}'s Home`
+    : "Loading..."}
+</p>
             </div>
             <div className="flex items-center gap-4" style={{flexShrink: 0}}>
               <div className="text-right" style={{flexShrink: 0}}>
@@ -3661,7 +3661,7 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
                       </p>
                       
                       <p className="text-xs text-purple-600">
-                        {e.isBirthday ? '🎂 Birthday Event' : `Created by: ${e.createdByName || 'Unknown'}`}
+                        {e.isBirthday ? 'Birthday Event' : `Created by: ${e.createdByName || 'Unknown'}`}
                       </p>
                       
                       {e.description && (
