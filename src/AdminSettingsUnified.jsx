@@ -241,7 +241,7 @@ const AdminSettingsUnified = ({ onDataChange }) => {
                 className="w-full bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold text-sm md:text-base"
                 style={{padding: '12px'}}
               >
-                {loading ? 'Sending...' : '📧 Send Invite'}
+                {loading ? 'Sending...' : 'Send Invite'}
               </button>
             </form>
           </div>
@@ -274,7 +274,7 @@ const AdminSettingsUnified = ({ onDataChange }) => {
                       className="bg-red-500 text-white rounded hover:bg-red-600 text-xs md:text-sm whitespace-nowrap"
                       style={{padding: '6px 12px'}}
                     >
-                      🗑️ Delete
+                      Delete
                     </button>
                   </div>
                 ))}
@@ -320,14 +320,14 @@ const AdminSettingsUnified = ({ onDataChange }) => {
                         className="bg-blue-500 text-white rounded hover:bg-blue-600 text-xs md:text-sm whitespace-nowrap"
                         style={{padding: '6px 12px'}}
                       >
-                        ✏️ Edit
+                        Edit
                       </button>
                       <button
                         onClick={() => deleteUser(user.id)}
                         className="bg-red-500 text-white rounded hover:bg-red-600 text-xs md:text-sm whitespace-nowrap"
                         style={{padding: '6px 12px'}}
                       >
-                        🗑️ Delete
+                        Delete
                       </button>
                     </div>
                   )}
@@ -389,7 +389,7 @@ const AdminSettingsUnified = ({ onDataChange }) => {
                           className="flex-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-sm md:text-base"
                           style={{padding: '10px'}}
                         >
-                          💾 Save
+                          Save
                         </button>
                         <button
                           onClick={cancelEdit}
@@ -428,7 +428,7 @@ const AdminSettingsUnified = ({ onDataChange }) => {
                         className="bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold text-sm md:text-base whitespace-nowrap"
                         style={{padding: '8px 16px'}}
                       >
-                        ✏️ Edit Profile
+                        Edit Profile
                       </button>
                     </div>
                   )}
