@@ -2922,13 +2922,13 @@ const getAvailableChoresFor = (userId) => {
   </div>
   <div className="flex gap-2 flex-wrap">
     {isAdmin && (
-      <button
-        onClick={() => setShowChoreManager(!showChoreManager)}
-        className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm md:text-base whitespace-nowrap"
-      >
-        ⚙️ Manage Chores
-      </button>
-    )}
+  <button
+    onClick={() => setShowChoreManager(!showChoreManager)}
+    className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm md:text-base whitespace-nowrap min-w-[140px]"
+  >
+    ⚙️ Manage Chores
+  </button>
+)}
     <button
       onClick={() => setShowHistory(true)}
       className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm md:text-base whitespace-nowrap min-w-[110px]"
