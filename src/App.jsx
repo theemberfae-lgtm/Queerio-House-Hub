@@ -2157,7 +2157,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                                         className="bg-blue-600 text-white text-xs md:text-sm rounded hover:bg-blue-700 whitespace-nowrap"
                                         style={{padding: '8px 16px'}}
                                       >
-                                        💵 Log Payment
+                                        Log Payment
                                       </button>
                                       {(userPayment.paymentHistory && userPayment.paymentHistory.length > 0) && (
                                         <button
