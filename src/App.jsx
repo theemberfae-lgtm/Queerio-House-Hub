@@ -1245,7 +1245,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
             className="bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm md:text-base whitespace-nowrap"
             style={{padding: '8px 16px'}}
           >
-            {showDateFilter ? '✕ Hide Filter' : '📅 Filter by Date'}
+            {showDateFilter ? 'Hide Filter' : 'Filter by Date'}
           </button>
           {isAdmin && (
             <button 
@@ -1457,7 +1457,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
       {showCreditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{padding: '1rem'}}>
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" style={{padding: '2rem'}}>
-            <h2 className="text-2xl font-bold text-purple-600 mb-4">💰 Credit Management</h2>
+            <h2 className="text-2xl font-bold text-purple-600 mb-4">Credit Management</h2>
             
             <p className="text-gray-700 mb-6">
               The following users have overpaid due to your changes. Please decide how to handle each credit:
@@ -1577,7 +1577,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
         <div className="mb-6 bg-white rounded-lg shadow-lg border-2 border-purple-300" style={{padding: '2rem'}}>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
             <div>
-              <h2 className="text-xl md:text-2xl font-bold text-purple-600">💸 Payment Tracker</h2>
+              <h2 className="text-xl md:text-2xl font-bold text-purple-600">Payment Tracker</h2>
               <h3 className="text-base md:text-lg text-gray-700">{paymentModalData.billName}</h3>
             </div>
             <button
@@ -1589,7 +1589,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
               className="bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-semibold text-sm md:text-base"
               style={{padding: '8px 16px'}}
             >
-              ✕ Close
+              Close
             </button>
           </div>
             {/* Amount Summary */}
@@ -1678,7 +1678,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                     className="w-full bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold text-sm md:text-base"
                     style={{padding: '12px'}}
                   >
-                    ➕ Add Payment
+                    Add Payment
                   </button>
                 </div>
               </div>
@@ -1743,7 +1743,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                       className="flex-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
                       style={{padding: '12px'}}
                     >
-                      💾 Save Changes
+                      Save Changes
                     </button>
                     <button
                       onClick={() => setEditingPayment(null)}
@@ -1781,7 +1781,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                           className="bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
                           style={{padding: '6px 12px'}}
                         >
-                          ✏️ Edit
+                          Edit
                         </button>
                         <button
                           onClick={() => {
@@ -1792,7 +1792,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                           className="bg-red-500 text-white rounded hover:bg-red-600 text-sm"
                           style={{padding: '6px 12px'}}
                         >
-                          🗑️ Delete
+                          Delete
                         </button>
                       </div>
                     </div>
@@ -1842,7 +1842,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                   {isFutureInstance && (
                     <div className="mb-2">
                       <span className="text-xs md:text-sm bg-blue-100 text-blue-700 rounded" style={{padding: '4px 12px'}}>
-                        📅 Future Instance (Recurring)
+                        Future Instance (Recurring)
                       </span>
                     </div>
                   )}
@@ -2061,7 +2061,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                         </div>
                       )}
                       {isAdmin && b.paid && (
-                        <span className="text-sm text-green-600 font-semibold">✓ Fully Paid</span>
+                        <span className="text-sm text-green-600 font-semibold">Fully Paid</span>
                       )}
                     </div>
                   </div>
@@ -2128,7 +2128,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                                       </span>
                                       {userPayment.creditAction && (
                                         <span className="text-xs text-purple-600 ml-2">
-                                          ({userPayment.creditAction === 'refund' ? '💰 Refund issued' : `📝 Applied to ${userPayment.creditAppliedTo}`})
+                                          ({userPayment.creditAction === 'refund' ? 'Refund issued' : `📝 Applied to ${userPayment.creditAppliedTo}`})
                                         </span>
                                       )}
                                     </div>
@@ -2147,7 +2147,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                                       className="bg-green-600 text-white text-xs md:text-sm rounded hover:bg-green-700 whitespace-nowrap"
                                       style={{padding: '8px 16px'}}
                                     >
-                                      ✓ Mark Paid
+                                      Mark Paid
                                     </button>
                                   )}
                                   {(profile && profile.id === userId) || isAdmin ? (
@@ -2177,7 +2177,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                                   {userPayment.paymentHistory && userPayment.paymentHistory.length > 0 ? (
                                     <div className="flex flex-col">
                                       <span className="text-xs text-green-600 font-semibold">
-                                        ✓ Paid in {userPayment.paymentHistory.length} payment{userPayment.paymentHistory.length > 1 ? 's' : ''}
+                                        Paid in {userPayment.paymentHistory.length} payment{userPayment.paymentHistory.length > 1 ? 's' : ''}
                                       </span>
                                       {profile && profile.id === userId && (
                                         <button
@@ -2433,7 +2433,7 @@ const adminMarkPurchase = (itemId, userId) => {
               {editingItem === item.id ? (
                 // EDIT MODE
                 <div className="space-y-4">
-                  <h3 className="font-bold text-lg text-blue-600 mb-4">✏️ Editing Item</h3>
+                  <h3 className="font-bold text-lg text-blue-600 mb-4">Editing Item</h3>
                   
                   {/* Item Name Field */}
                   <div>
@@ -2490,7 +2490,7 @@ const adminMarkPurchase = (itemId, userId) => {
                       className="flex-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-sm md:text-base"
                       style={{padding: '12px'}}
                     >
-                      💾 Save Changes
+                      Save Changes
                     </button>
                     <button
                       onClick={cancelEditItem}
@@ -2596,7 +2596,7 @@ const adminMarkPurchase = (itemId, userId) => {
                         className="bg-green-500 text-white rounded-lg hover:bg-green-600 whitespace-nowrap text-sm md:text-base min-w-[160px] font-medium"
                         style={{padding: '12px 20px'}}
                       >
-                        ✓ I Bought This
+                        I Bought This
                       </button>
                       {isAdmin && (
                         <>
@@ -2612,7 +2612,7 @@ const adminMarkPurchase = (itemId, userId) => {
                             className="bg-blue-500 text-white rounded-lg hover:bg-blue-600 whitespace-nowrap text-sm md:text-base min-w-[160px] font-medium"
                             style={{padding: '12px 20px'}}
                           >
-✏️ Edit Item
+Edit Item
                           </button>
                         </>
                       )}
@@ -2926,7 +2926,7 @@ const getAvailableChoresFor = (userId) => {
     onClick={() => setShowChoreManager(!showChoreManager)}
     className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm md:text-base whitespace-nowrap min-w-[140px]"
   >
-    ⚙️ Manage Chores
+    Manage Chores
   </button>
 )}
     <button
@@ -2952,7 +2952,7 @@ const getAvailableChoresFor = (userId) => {
 {/* CHORE MANAGER PANEL - ADD RIGHT AFTER THE ABOVE DIV */}
 {showChoreManager && isAdmin && (
   <div className="mb-6 bg-purple-50 border-2 border-purple-300 rounded-lg" style={{padding: '1.5rem'}}>
-    <h3 className="text-lg font-bold text-purple-700 mb-4">🛠️ Chore Manager</h3>
+    <h3 className="text-lg font-bold text-purple-700 mb-4">Chore Manager</h3>
     
     {/* Add New Chore */}
     <div className="mb-4 bg-white rounded-lg border-2 border-gray-200" style={{padding: '1rem'}}>
@@ -2971,7 +2971,7 @@ const getAvailableChoresFor = (userId) => {
           className="bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold text-sm md:text-base whitespace-nowrap"
           style={{padding: '10px 20px'}}
         >
-          ➕ Add
+          Add
         </button>
       </div>
     </div>
@@ -2997,7 +2997,7 @@ const getAvailableChoresFor = (userId) => {
                   className="bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm md:text-base whitespace-nowrap"
                   style={{padding: '8px 16px'}}
                 >
-                  💾 Save
+                  Save
                 </button>
                 <button
                   onClick={cancelChoreEdit}
@@ -3017,14 +3017,14 @@ const getAvailableChoresFor = (userId) => {
                     className="bg-blue-500 text-white rounded hover:bg-blue-600 text-sm whitespace-nowrap"
                     style={{padding: '6px 12px'}}
                   >
-                    ✏️ Edit
+                    Edit
                   </button>
                   <button
                     onClick={() => deleteChore(chore.id)}
                     className="bg-red-500 text-white rounded hover:bg-red-600 text-sm whitespace-nowrap"
                     style={{padding: '6px 12px'}}
                   >
-                    🗑️ Delete
+                    Delete
                   </button>
                 </div>
               </div>
@@ -3039,7 +3039,7 @@ const getAvailableChoresFor = (userId) => {
 {/* CHORE MANAGER - ADD THIS ENTIRE SECTION */}
 {showChoreManager && isAdmin && (
   <div className="mb-6 bg-purple-50 border-2 border-purple-300 rounded-lg" style={{padding: '1.5rem'}}>
-    <h3 className="text-lg font-bold text-purple-700 mb-4">🛠️ Chore Manager</h3>
+    <h3 className="text-lg font-bold text-purple-700 mb-4">Chore Manager</h3>
     
     {/* Add New Chore */}
     <div className="mb-4 bg-white rounded-lg border-2 border-gray-200" style={{padding: '1rem'}}>
@@ -3058,7 +3058,7 @@ const getAvailableChoresFor = (userId) => {
           className="bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold"
           style={{padding: '10px 20px', whiteSpace: 'nowrap'}}
         >
-          ➕ Add
+          Add
         </button>
       </div>
     </div>
@@ -3084,7 +3084,7 @@ const getAvailableChoresFor = (userId) => {
                   className="bg-blue-500 text-white rounded-lg hover:bg-blue-600"
                   style={{padding: '8px 16px', whiteSpace: 'nowrap'}}
                 >
-                  💾 Save
+                  Save
                 </button>
                 <button
                   onClick={cancelChoreEdit}
@@ -3104,14 +3104,14 @@ const getAvailableChoresFor = (userId) => {
                     className="bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
                     style={{padding: '6px 12px'}}
                   >
-                    ✏️ Edit
+                    Edit
                   </button>
                   <button
                     onClick={() => deleteChore(chore.id)}
                     className="bg-red-500 text-white text-sm rounded hover:bg-red-600"
                     style={{padding: '6px 12px'}}
                   >
-                    🗑️ Delete
+                    Delete
                   </button>
                 </div>
               </div>
@@ -3656,7 +3656,7 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
                       </h3>
                       
                       <p className="text-xs md:text-sm text-gray-600 mb-1">
-                        📅 {formatDate(e.date)}
+                        {formatDate(e.date)}
                         {e.time && ` at ${e.time}`}
                       </p>
                       
