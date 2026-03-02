@@ -14,6 +14,7 @@ const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [bills, setBills] = useState([]);
   const [householdMembers, setHouseholdMembers] = useState([]);
+  const [users, setUsers] = useState([]);
   
   const [items, setItems] = useState([
     { 
@@ -122,19 +123,20 @@ const App = () => {
   }, []);
 
   const loadHouseholdMembers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('name')
-        .order('name');
-      
-      if (!error && data) {
-        setHouseholdMembers(data.map(p => p.name));
-      }
-    } catch (e) {
-      console.error('Failed to load household members:', e);
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, name, email')
+      .order('name');
+    
+    if (!error && data) {
+      setHouseholdMembers(data.map(p => p.name));
+      setUsers(data); // Store full user objects
     }
-  };
+  } catch (e) {
+    console.error('Failed to load household members:', e);
+  }
+};
 
   const loadData = async () => {
     try {
@@ -209,8 +211,14 @@ const App = () => {
 const getUserName = (userId) => {
   if (!userId) return 'Unknown User';
   
-  // If userId is already a name from old system, return it
-  if (roommates.includes(userId)) return userId;
+  // If userId is already a name from old system, return it with indicator
+  if (roommates.includes(userId)) {
+    return userId + ' ⚠️'; // Warning: old system name
+  }
+  
+  // Look up in users array
+  const user = users.find(u => u.id === userId);
+  if (user) return user.name || user.email;
   
   // Check if it's current user
   if (profile?.id === userId) return profile.name || profile.email;
@@ -315,7 +323,7 @@ const validateRotation = (rotation) => {
     colors={colors} 
     selectedItem={selectedItem} 
     setSelectedItem={setSelectedItem}
-    users={roommates}
+    users={users}
     getUserName={getUserName}
     validateRotation={validateRotation}
     isAdmin={isAdmin}
@@ -2621,7 +2629,7 @@ const adminMarkPurchase = (itemId, userId) => {
 };
 
 const Tasks = ({ 
-  monthlyChores,
+  monthlyChores, 
   setMonthlyChores, 
   oneOffTasks, 
   setOneOffTasks, 
@@ -2637,10 +2645,15 @@ const Tasks = ({
   choreHistory, 
   setChoreHistory 
 }) => {
+  const { profile, isAdmin } = useAuth();
   const [title, setTitle] = useState('');
   const [assignee, setAssignee] = useState('');
   const [due, setDue] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+  const [editingChore, setEditingChore] = useState(null);
+  const [editChoreName, setEditChoreName] = useState('');
+  const [showChoreManager, setShowChoreManager] = useState(false);
+  const [newChoreName, setNewChoreName] = useState('');
 
   const assignChore = (choreId, person) => {
     const updated = monthlyChores.map(c => 
@@ -2735,6 +2748,62 @@ const Tasks = ({
     setOneOffTasks(updated);
     saveData({ oneOffTasks: updated });
   };
+  const startEditChore = (chore) => {
+    setEditingChore(chore.id);
+    setEditChoreName(chore.name);
+  };
+
+  const saveChoreEdit = () => {
+    if (!editChoreName.trim()) {
+      alert('Chore name cannot be empty');
+      return;
+    }
+    
+    const updated = monthlyChores.map(c => 
+      c.id === editingChore ? { ...c, name: editChoreName.trim() } : c
+    );
+    setMonthlyChores(updated);
+    saveData({ monthlyChores: updated });
+    addActivity(`Chore renamed to: ${editChoreName}`);
+    setEditingChore(null);
+    setEditChoreName('');
+  };
+
+  const cancelChoreEdit = () => {
+    setEditingChore(null);
+    setEditChoreName('');
+  };
+
+  const addNewChore = () => {
+    if (!newChoreName.trim()) {
+      alert('Please enter a chore name');
+      return;
+    }
+    
+    const newChore = {
+      id: newChoreName.toLowerCase().replace(/\s+/g, ''),
+      name: newChoreName.trim(),
+      rotation: [],
+      currentIndex: 0
+    };
+    
+    const updated = [...monthlyChores, newChore];
+    setMonthlyChores(updated);
+    saveData({ monthlyChores: updated });
+    addActivity(`New chore added: ${newChoreName}`);
+    setNewChoreName('');
+  };
+  
+  const deleteChore = (choreId) => {
+    if (!confirm('Delete this chore? This cannot be undone.')) {
+      return;
+    }
+    
+    const updated = monthlyChores.filter(c => c.id !== choreId);
+    setMonthlyChores(updated);
+    saveData({ monthlyChores: updated });
+    addActivity(`Chore deleted`);
+  };
 
    if (selectedItem) {
     return (
@@ -2817,30 +2886,212 @@ const Tasks = ({
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow-lg" style={{padding: '3rem', overflow: 'hidden'}}>
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
-          <div>
-            <h2 className="text-xl md:text-2xl font-bold">Monthly Chores</h2>
-            <p className="text-xs md:text-sm text-gray-600">{currentMonth}</p>
+  <div>
+    <h2 className="text-xl md:text-2xl font-bold">Monthly Chores</h2>
+    <p className="text-xs md:text-sm text-gray-600">{currentMonth}</p>
+  </div>
+  <div className="flex gap-2 flex-wrap">
+    {isAdmin && (
+      <button
+        onClick={() => setShowChoreManager(!showChoreManager)}
+        className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm md:text-base whitespace-nowrap"
+      >
+        ⚙️ Manage Chores
+      </button>
+    )}
+    <button
+      onClick={() => setShowHistory(true)}
+      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm md:text-base whitespace-nowrap min-w-[110px]"
+    >
+      View History
+    </button>
+    <button 
+      onClick={() => { 
+        const cleared = monthlyChores.map(c => ({ ...c, rotation: [] }));
+        setMonthlyChores(cleared);
+        saveData({ monthlyChores: cleared });
+        addActivity('Chores cleared for ' + currentMonth);
+      }} 
+      className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm md:text-base whitespace-nowrap min-w-[90px]"
+    >
+      Clear All
+    </button>
+  </div>
+</div>
+
+{/* CHORE MANAGER PANEL - ADD RIGHT AFTER THE ABOVE DIV */}
+{showChoreManager && isAdmin && (
+  <div className="mb-6 bg-purple-50 border-2 border-purple-300 rounded-lg" style={{padding: '1.5rem'}}>
+    <h3 className="text-lg font-bold text-purple-700 mb-4">🛠️ Chore Manager</h3>
+    
+    {/* Add New Chore */}
+    <div className="mb-4 bg-white rounded-lg border-2 border-gray-200" style={{padding: '1rem'}}>
+      <h4 className="font-semibold text-sm mb-2">Add New Chore</h4>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={newChoreName}
+          onChange={(e) => setNewChoreName(e.target.value)}
+          placeholder="e.g., Vacuum Bedrooms"
+          className="flex-1 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
+          style={{padding: '10px'}}
+        />
+        <button
+          onClick={addNewChore}
+          className="bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold text-sm md:text-base whitespace-nowrap"
+          style={{padding: '10px 20px'}}
+        >
+          ➕ Add
+        </button>
+      </div>
+    </div>
+    
+    {/* Edit Existing Chores */}
+    <div>
+      <h4 className="font-semibold text-sm mb-2">Edit Chores</h4>
+      <div className="space-y-2">
+        {monthlyChores.map(chore => (
+          <div key={chore.id} className="bg-white rounded-lg border-2 border-gray-200" style={{padding: '1rem'}}>
+            {editingChore === chore.id ? (
+              // EDIT MODE
+              <div className="flex gap-2 items-center flex-wrap">
+                <input
+                  type="text"
+                  value={editChoreName}
+                  onChange={(e) => setEditChoreName(e.target.value)}
+                  className="flex-1 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+                  style={{padding: '8px', minWidth: '200px'}}
+                />
+                <button
+                  onClick={saveChoreEdit}
+                  className="bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm md:text-base whitespace-nowrap"
+                  style={{padding: '8px 16px'}}
+                >
+                  💾 Save
+                </button>
+                <button
+                  onClick={cancelChoreEdit}
+                  className="bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 text-sm md:text-base whitespace-nowrap"
+                  style={{padding: '8px 16px'}}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              // VIEW MODE
+              <div className="flex justify-between items-center gap-2 flex-wrap">
+                <span className="font-medium text-sm md:text-base">{chore.name}</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => startEditChore(chore)}
+                    className="bg-blue-500 text-white rounded hover:bg-blue-600 text-sm whitespace-nowrap"
+                    style={{padding: '6px 12px'}}
+                  >
+                    ✏️ Edit
+                  </button>
+                  <button
+                    onClick={() => deleteChore(chore.id)}
+                    className="bg-red-500 text-white rounded hover:bg-red-600 text-sm whitespace-nowrap"
+                    style={{padding: '6px 12px'}}
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowHistory(true)}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm md:text-base whitespace-nowrap min-w-[110px]"
-            >
-              View History
-            </button>
-            <button 
-              onClick={() => { 
-                const cleared = monthlyChores.map(c => ({ ...c, rotation: [] }));
-                setMonthlyChores(cleared);
-                saveData({ monthlyChores: cleared });
-                addActivity('Chores cleared for ' + currentMonth);
-              }} 
-              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm md:text-base whitespace-nowrap min-w-[90px]"
-            >
-              Clear All
-            </button>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
+
+{/* CHORE MANAGER - ADD THIS ENTIRE SECTION */}
+{showChoreManager && isAdmin && (
+  <div className="mb-6 bg-purple-50 border-2 border-purple-300 rounded-lg" style={{padding: '1.5rem'}}>
+    <h3 className="text-lg font-bold text-purple-700 mb-4">🛠️ Chore Manager</h3>
+    
+    {/* Add New Chore */}
+    <div className="mb-4 bg-white rounded-lg border-2 border-gray-200" style={{padding: '1rem'}}>
+      <h4 className="font-semibold text-sm mb-2">Add New Chore</h4>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={newChoreName}
+          onChange={(e) => setNewChoreName(e.target.value)}
+          placeholder="e.g., Vacuum Bedrooms"
+          className="flex-1 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+          style={{padding: '10px'}}
+        />
+        <button
+          onClick={addNewChore}
+          className="bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold"
+          style={{padding: '10px 20px', whiteSpace: 'nowrap'}}
+        >
+          ➕ Add
+        </button>
+      </div>
+    </div>
+    
+    {/* Edit Existing Chores */}
+    <div>
+      <h4 className="font-semibold text-sm mb-2">Edit Chores</h4>
+      <div className="space-y-2">
+        {monthlyChores.map(chore => (
+          <div key={chore.id} className="bg-white rounded-lg border-2 border-gray-200" style={{padding: '1rem'}}>
+            {editingChore === chore.id ? (
+              // EDIT MODE
+              <div className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  value={editChoreName}
+                  onChange={(e) => setEditChoreName(e.target.value)}
+                  className="flex-1 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  style={{padding: '8px'}}
+                />
+                <button
+                  onClick={saveChoreEdit}
+                  className="bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                  style={{padding: '8px 16px', whiteSpace: 'nowrap'}}
+                >
+                  💾 Save
+                </button>
+                <button
+                  onClick={cancelChoreEdit}
+                  className="bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                  style={{padding: '8px 16px'}}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              // VIEW MODE
+              <div className="flex justify-between items-center">
+                <span className="font-medium">{chore.name}</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => startEditChore(chore)}
+                    className="bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                    style={{padding: '6px 12px'}}
+                  >
+                    ✏️ Edit
+                  </button>
+                  <button
+                    onClick={() => deleteChore(chore.id)}
+                    className="bg-red-500 text-white text-sm rounded hover:bg-red-600"
+                    style={{padding: '6px 12px'}}
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
         
         <div className="space-y-4">
           {roommates.map(person => {
