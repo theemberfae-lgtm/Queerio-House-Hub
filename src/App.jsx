@@ -330,7 +330,7 @@ const validateRotation = (rotation) => {
     currentUserId={profile?.id}
   />
 )}
-        {activeTab === 'tasks' && <Tasks monthlyChores={monthlyChores} setMonthlyChores={setMonthlyChores} oneOffTasks={oneOffTasks} setOneOffTasks={setOneOffTasks} saveData={saveData} addActivity={addActivity} colors={colors} roommates={roommates} showForm={showForm} setShowForm={setShowForm} selectedItem={selectedItem} setSelectedItem={setSelectedItem} currentMonth={currentMonth} choreHistory={choreHistory} setChoreHistory={setChoreHistory} />}
+        {activeTab === 'tasks' && <Tasks monthlyChores={monthlyChores} setMonthlyChores={setMonthlyChores} oneOffTasks={oneOffTasks} setOneOffTasks={setOneOffTasks} saveData={saveData} addActivity={addActivity} colors={colors} roommates={roommates} users={users} getUserName={getUserName} showForm={showForm} setShowForm={setShowForm} selectedItem={selectedItem} setSelectedItem={setSelectedItem} currentMonth={currentMonth} choreHistory={choreHistory} setChoreHistory={setChoreHistory} />}
         {activeTab === 'events' && <Events events={events} setEvents={setEvents} saveData={saveData} addActivity={addActivity} showForm={showForm} setShowForm={setShowForm} />}\
         {activeTab === 'admin-settings' && <AdminSettingsUnified onDataChange={forceReload} />}
 
@@ -2637,6 +2637,8 @@ const Tasks = ({
   addActivity, 
   colors, 
   roommates, 
+  users,
+  getUserName,
   showForm, 
   setShowForm, 
   selectedItem, 
@@ -2655,66 +2657,94 @@ const Tasks = ({
   const [showChoreManager, setShowChoreManager] = useState(false);
   const [newChoreName, setNewChoreName] = useState('');
 
-  const assignChore = (choreId, person) => {
-    const updated = monthlyChores.map(c => 
-      c.id === choreId ? { ...c, rotation: [person] } : c
-    );
-    setMonthlyChores(updated);
-    saveData({ monthlyChores: updated });
-    addActivity(`${person} assigned to ${monthlyChores.find(c => c.id === choreId).name}`);
-  };
+  const assignChore = (choreId, userId) => {
+  const user = users.find(u => u.id === userId);
+  const userName = user ? (user.name || user.email) : 'Unknown';
+  
+  const updated = monthlyChores.map(c => 
+    c.id === choreId ? { ...c, rotation: [userId] } : c
+  );
+  setMonthlyChores(updated);
+  saveData({ monthlyChores: updated });
+  addActivity(`${userName} assigned to ${monthlyChores.find(c => c.id === choreId).name}`);
+};
 
-  const spinWheelForPerson = (person) => {
-    const canEvaDoIt = (choreId) => ['frontyard', 'livingroom', 'sweep', 'steammop', 'dealers'].includes(choreId);
+  const spinWheelForPerson = (userId) => {
+  const user = users.find(u => u.id === userId);
+  const userName = user ? (user.name || user.email) : 'Unknown';
+  
+  const canEvaDoIt = (choreId) => ['frontyard', 'livingroom', 'sweep', 'steammop', 'dealers'].includes(choreId);
+  
+  let availableChores = monthlyChores.filter(c => {
+    if (c.rotation.length > 0 && c.rotation[0]) return false;
+    if (userName === 'Eva' && !canEvaDoIt(c.id)) return false;
+    if (userName !== 'Eva' && (c.id === 'sweep' || c.id === 'steammop')) return false;
+    return true;
+  });
+
+  if (availableChores.length === 0) return;
+
+  const randomChore = availableChores[Math.floor(Math.random() * availableChores.length)];
+  assignChore(randomChore.id, userId);
+  addActivity(`${userName} got ${randomChore.name} via spin!`);
+};
+
+  const getPersonChores = (userId) => {
+  return monthlyChores.filter(c => {
+    if (c.rotation.length === 0) return false;
+    const assignedTo = c.rotation[0];
+    // Support both old system (names) and new system (user IDs)
+    return assignedTo === userId || (users && users.find(u => u.id === userId && u.name === assignedTo));
+  });
+};
+
+const getAvailableChoresFor = (userId) => {
+  // Get user name for Eva check
+  const user = users.find(u => u.id === userId);
+  const userName = user ? (user.name || user.email) : '';
+  
+  return monthlyChores.filter(c => {
+    const isAssigned = c.rotation.length > 0 && c.rotation[0];
+    if (isAssigned) return false;
     
-    let availableChores = monthlyChores.filter(c => {
-      if (c.rotation.length > 0 && c.rotation[0]) return false;
-      if (person === 'Eva' && !canEvaDoIt(c.id)) return false;
-      if (person !== 'Eva' && (c.id === 'sweep' || c.id === 'steammop')) return false;
-      return true;
-    });
-
-    if (availableChores.length === 0) return;
-
-    const randomChore = availableChores[Math.floor(Math.random() * availableChores.length)];
-    assignChore(randomChore.id, person);
-    addActivity(`${person} got ${randomChore.name} via spin!`);
-  };
-
-  const getPersonChores = (person) => {
-    return monthlyChores.filter(c => c.rotation.length > 0 && c.rotation[0] === person);
-  };
-
-  const getAvailableChoresFor = (person) => {
-    return monthlyChores.filter(c => {
-      const isAssigned = c.rotation.length > 0 && c.rotation[0];
-      if (isAssigned) return false;
-      if (person !== 'Eva' && (c.id === 'sweep' || c.id === 'steammop')) return false;
-      return true;
-    });
-  };
+    // Keep Eva restriction if username is Eva
+    if (userName !== 'Eva' && (c.id === 'sweep' || c.id === 'steammop')) return false;
+    
+    return true;
+  });
+};
 
   const completeMonthly = (choreId) => {
-    const chore = monthlyChores.find(c => c.id === choreId);
-    const person = chore.rotation[0];
-    
-    const completedChore = {
-      id: Date.now(),
-      name: chore.name,
-      assignedTo: person,
-      month: currentMonth,
-      completedDate: new Date().toISOString()
-    };
-    
-    const newHistory = [...choreHistory, completedChore];
-    const updated = monthlyChores.map(c => c.id === choreId ? { ...c, rotation: [] } : c);
-    
-    setMonthlyChores(updated);
-    setChoreHistory(newHistory);
-    saveData({ monthlyChores: updated, choreHistory: newHistory });
-    addActivity(`${person} completed ${chore.name}`);
-    setSelectedItem(null);
+  const chore = monthlyChores.find(c => c.id === choreId);
+  const assignedTo = chore.rotation[0];
+  
+  // Get user name - support both old and new system
+  let displayName = assignedTo;
+  if (users) {
+    const user = users.find(u => u.id === assignedTo);
+    if (user) {
+      displayName = user.name || user.email;
+    }
+  }
+  
+  const completedChore = {
+    id: Date.now(),
+    name: chore.name,
+    assignedTo: displayName, // Store display name for history
+    userId: assignedTo,      // Store user ID for future reference
+    month: currentMonth,
+    completedDate: new Date().toISOString()
   };
+  
+  const newHistory = [...choreHistory, completedChore];
+  const updated = monthlyChores.map(c => c.id === choreId ? { ...c, rotation: [] } : c);
+  
+  setMonthlyChores(updated);
+  setChoreHistory(newHistory);
+  saveData({ monthlyChores: updated, choreHistory: newHistory });
+  addActivity(`${displayName} completed ${chore.name}`);
+  setSelectedItem(null);
+};
 
   const addTask = () => {
     if (!title || !assignee) return;
@@ -3094,50 +3124,59 @@ const Tasks = ({
 )}
         
         <div className="space-y-4">
-          {roommates.map(person => {
-            const personChores = getPersonChores(person);
-            const availableChores = getAvailableChoresFor(person);
-            return (
-              <div key={person} className="bg-gray-50 rounded-lg border-2 border-gray-200" style={{padding: '1rem', overflow: 'hidden'}}>
-                <div className="flex flex-col md:flex-row justify-between items-center gap-3 mb-3">
-                  <h3 
-                    className={`text-lg md:text-xl font-bold rounded ${colors[person]}`}
-                    style={{
-                      padding: '4px 12px',
-                      whiteSpace: 'nowrap',
-                      display: 'inline-block'
-                    }}
-                  >
-                    {person}
-                  </h3>
+  {users && users.length > 0 ? users.map(user => {
+    const userId = user.id;
+    const userName = user.name || user.email;
+    const personChores = getPersonChores(userId);
+    const availableChores = getAvailableChoresFor(userId);
+    
+    // Check if using old system
+    const hasOldChores = personChores.some(c => 
+      c.rotation.length > 0 && roommates.includes(c.rotation[0])
+    );
+    
+    return (
+      <div key={userId} className="bg-gray-50 rounded-lg border-2 border-gray-200" style={{padding: '1rem', overflow: 'hidden'}}>
+        <div className="flex flex-col md:flex-row justify-between items-center gap-3 mb-3">
+          <h3 
+            className={`text-lg md:text-xl font-bold rounded ${colors[userId] || colors[userName] || 'bg-gray-200 text-gray-800'}`}
+            style={{
+              padding: '4px 12px',
+              whiteSpace: 'nowrap',
+              display: 'inline-block'
+            }}
+          >
+            {userName}
+            {hasOldChores && <span className="ml-2 text-sm">⚠️</span>}
+          </h3>
                   <div className="flex gap-2">
-                    {personChores.length < 2 && availableChores.length > 0 && (
-                      <>
-                        <select 
-                          onChange={(e) => { 
-                            if (e.target.value) {
-                              assignChore(e.target.value, person);
-                              e.target.value = '';
-                            }
-                          }}
-                          className="px-3 py-2 border-2 border-green-500 bg-white text-gray-800 text-xs md:text-sm rounded cursor-pointer min-w-[110px]"
-                        >
-                          <option value="" className="bg-white text-gray-800">Pick Chore</option>
-                          {availableChores.map(chore => (
-                            <option key={chore.id} value={chore.id} className="bg-white text-gray-800">
-                              {chore.name}
-                            </option>
-                          ))}
-                        </select>
-                        <button 
-                          onClick={() => spinWheelForPerson(person)} 
-                          className="px-4 py-2 bg-purple-500 text-white text-xs md:text-sm rounded hover:bg-purple-600 whitespace-nowrap min-w-[60px]"
-                        >
-                          Spin
-                        </button>
-                      </>
-                    )}
-                  </div>
+  {personChores.length < 2 && availableChores.length > 0 && (
+    <>
+      <select 
+        onChange={(e) => { 
+          if (e.target.value) {
+            assignChore(e.target.value, userId);
+            e.target.value = '';
+          }
+        }}
+        className="px-3 py-2 border-2 border-green-500 bg-white text-gray-800 text-xs md:text-sm rounded cursor-pointer min-w-[110px]"
+      >
+        <option value="" className="bg-white text-gray-800">Pick Chore</option>
+        {availableChores.map(chore => (
+          <option key={chore.id} value={chore.id} className="bg-white text-gray-800">
+            {chore.name}
+          </option>
+        ))}
+      </select>
+      <button 
+        onClick={() => spinWheelForPerson(userId)} 
+        className="px-4 py-2 bg-purple-500 text-white text-xs md:text-sm rounded hover:bg-purple-600 whitespace-nowrap min-w-[60px]"
+      >
+        Spin
+      </button>
+    </>
+  )}
+</div>
                 </div>
                 
                 <div className="space-y-2">
@@ -3157,10 +3196,12 @@ const Tasks = ({
                     ))
                   )}
                 </div>
-              </div>
-            );
-          })}
-        </div>
+      </div>
+    );
+  }) : (
+    <p className="text-center text-gray-500 py-8 text-sm md:text-base">Loading users...</p>
+  )}
+</div>
       </div>
 
       <div className="bg-white rounded-lg shadow-lg" style={{padding: '3rem', overflow: 'hidden'}}>
