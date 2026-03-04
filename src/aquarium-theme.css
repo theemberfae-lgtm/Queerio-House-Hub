@@ -165,53 +165,10 @@ button:active {
 }
 
 /* ============================================
-   90s DENTIST OFFICE FISH TANK THEME 🐠
+   SIMPLE BUBBLE ANIMATIONS
    ============================================ */
 
-/* ==========================================
-   BACKGROUND - Bright Aqua/Turquoise Gradient
-   ========================================== */
-body {
-  background: linear-gradient(180deg, 
-    #00CED1 0%,      /* Bright turquoise at top */
-    #20B2AA 50%,     /* Medium sea green in middle */
-    #008B8B 100%     /* Darker teal at bottom */
-  );
-}
-
-/* ==========================================
-   SAND/GRAVEL TEXTURE AT BOTTOM
-   ========================================== */
-/* This creates a sandy bottom like a real fish tank */
-body::before {
-  content: '';
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 60px;  /* Height of the sand strip */
-  pointer-events: none;
-  z-index: 1;
-  
-  /* Create sand texture using noise pattern */
-  background: 
-    linear-gradient(180deg, 
-      rgba(210, 180, 140, 0) 0%,      /* Fade in from transparent */
-      rgba(210, 180, 140, 0.6) 30%,   /* Tan sand color */
-      rgba(194, 158, 114, 0.8) 100%   /* Darker brown at bottom */
-    ),
-    /* Add grainy texture */
-    repeating-linear-gradient(90deg, 
-      rgba(160, 130, 90, 0.1) 0px, 
-      transparent 1px, 
-      transparent 2px
-    );
-}
-
-/* ==========================================
-   VARIED BUBBLE SHAPES - Circles & Ovals
-   ========================================== */
-/* Bubbles now have different shapes for variety */
+/* Simple, visible bubbles that rise from bottom */
 body::after {
   content: '';
   position: fixed;
@@ -220,253 +177,89 @@ body::after {
   right: 0;
   height: 100vh;
   pointer-events: none;
-  z-index: 2;
+  z-index: 1;
   
-  /* Mix of circular and oval bubbles */
+  /* Create simple circular bubbles with white centers */
   background-image: 
-    /* Round bubbles */
     radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.3) 50%, transparent 70%),
     radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.25) 50%, transparent 70%),
-    /* Oval bubbles (wider) */
-    radial-gradient(ellipse 30px 20px, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.3) 50%, transparent 70%),
-    /* Tall oval bubbles */
-    radial-gradient(ellipse 18px 25px, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.25) 50%, transparent 70%);
+    radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.2) 50%, transparent 70%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
   
   background-size: 
-    22px 22px,    /* Round bubble */
-    18px 18px,    /* Small round bubble */
-    30px 20px,    /* Wide oval bubble */
-    18px 25px;    /* Tall oval bubble */
+    20px 20px,
+    15px 15px,
+    25px 25px,
+    18px 18px;
   
   background-position: 
-    15% 100%,
-    55% 100%,
+    10% 100%,
+    50% 100%,
     75% 100%,
-    35% 100%;
+    30% 100%;
   
   background-repeat: no-repeat;
-  animation: bubbleRise 20s linear infinite;
+  animation: simpleRise 18s linear infinite;
 }
 
-/* Hide all decorations when animations are off */
-body[data-animation-level="off"]::after,
-body[data-animation-level="off"]::before {
+/* Hide bubbles when animations are off */
+body[data-animation-level="off"]::after {
   display: none;
 }
 
-/* More bubbles for medium level */
+/* More bubbles for medium */
 body[data-animation-level="medium"]::after {
   background-image: 
     radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.3) 50%, transparent 70%),
     radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.25) 50%, transparent 70%),
-    radial-gradient(ellipse 30px 20px, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.3) 50%, transparent 70%),
-    radial-gradient(ellipse 18px 25px, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.25) 50%, transparent 70%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.2) 50%, transparent 70%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.3) 50%, transparent 70%),
     radial-gradient(circle, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.25) 50%, transparent 70%),
-    radial-gradient(ellipse 25px 18px, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.28) 50%, transparent 70%);
+    radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.28) 50%, transparent 70%);
   
   background-size: 
-    22px 22px, 18px 18px, 30px 20px,
-    18px 25px, 20px 20px, 25px 18px;
+    20px 20px, 15px 15px, 25px 25px,
+    18px 18px, 22px 22px, 16px 16px;
   
   background-position: 
-    15% 100%, 55% 100%, 75% 100%,
-    35% 100%, 65% 100%, 88% 100%;
+    10% 100%, 50% 100%, 75% 100%,
+    30% 100%, 60% 100%, 85% 100%;
   
-  animation: bubbleRise 16s linear infinite;
+  animation: simpleRise 15s linear infinite;
 }
 
-/* Maximum bubbles for full level */
+/* Maximum bubbles for full */
 body[data-animation-level="full"]::after {
   background-image: 
     radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.3) 50%, transparent 70%),
     radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.25) 50%, transparent 70%),
-    radial-gradient(ellipse 30px 20px, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.3) 50%, transparent 70%),
-    radial-gradient(ellipse 18px 25px, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.25) 50%, transparent 70%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.2) 50%, transparent 70%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.3) 50%, transparent 70%),
     radial-gradient(circle, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.25) 50%, transparent 70%),
-    radial-gradient(ellipse 25px 18px, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.28) 50%, transparent 70%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.28) 50%, transparent 70%),
     radial-gradient(circle, rgba(255, 255, 255, 0.68) 0%, rgba(255, 255, 255, 0.27) 50%, transparent 70%),
-    radial-gradient(ellipse 20px 28px, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.29) 50%, transparent 70%);
+    radial-gradient(circle, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.29) 50%, transparent 70%);
   
   background-size: 
-    22px 22px, 18px 18px, 30px 20px, 18px 25px,
-    20px 20px, 25px 18px, 19px 19px, 20px 28px;
+    20px 20px, 15px 15px, 25px 25px, 18px 18px,
+    22px 22px, 16px 16px, 19px 19px, 24px 24px;
   
   background-position: 
-    15% 100%, 55% 100%, 75% 100%, 35% 100%,
-    65% 100%, 88% 100%, 25% 100%, 45% 100%;
+    10% 100%, 50% 100%, 75% 100%, 30% 100%,
+    60% 100%, 85% 100%, 20% 100%, 40% 100%;
   
-  animation: bubbleRise 13s linear infinite;
+  animation: simpleRise 12s linear infinite;
 }
 
-/* Bubble rise animation - floats up and fades out */
-@keyframes bubbleRise {
-  0% {
+/* Simple rise animation */
+@keyframes simpleRise {
+  from {
     transform: translateY(0);
     opacity: 0.8;
   }
-  100% {
+  to {
     transform: translateY(-100vh);
     opacity: 0;
-  }
-}
-
-/* ==========================================
-   SWIMMING FISH (2-3 tropical fish)
-   ========================================== */
-/* Fish #1 - Orange fish swimming left to right */
-.min-h-screen::before {
-  content: '🐠';  /* Tropical fish emoji */
-  position: fixed;
-  font-size: 40px;
-  left: -60px;     /* Start off-screen */
-  top: 20%;        /* Swim at 20% from top */
-  pointer-events: none;
-  z-index: 3;
-  animation: fish1Swim 25s linear infinite;
-  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
-}
-
-/* Fish #2 - Blue/yellow fish swimming slower */
-.min-h-screen::after {
-  content: '🐟';  /* Different fish emoji */
-  position: fixed;
-  font-size: 35px;
-  left: -60px;     /* Start off-screen */
-  top: 60%;        /* Swim lower */
-  pointer-events: none;
-  z-index: 3;
-  animation: fish2Swim 30s linear infinite;
-  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
-}
-
-/* Hide fish when animations are off */
-body[data-animation-level="off"] .min-h-screen::before,
-body[data-animation-level="off"] .min-h-screen::after {
-  display: none;
-}
-
-/* Fish 1 animation - swims across, then returns */
-@keyframes fish1Swim {
-  0% {
-    left: -60px;
-    transform: scaleX(1);  /* Face right */
-  }
-  48% {
-    left: calc(100% + 60px);
-  }
-  50% {
-    left: calc(100% + 60px);
-    transform: scaleX(-1);  /* Flip to face left */
-  }
-  98% {
-    left: -60px;
-  }
-  100% {
-    left: -60px;
-    transform: scaleX(1);  /* Face right again */
-  }
-}
-
-/* Fish 2 animation - slower, different timing */
-@keyframes fish2Swim {
-  0% {
-    left: -60px;
-    transform: scaleX(1);
-  }
-  45% {
-    left: calc(100% + 60px);
-  }
-  50% {
-    left: calc(100% + 60px);
-    transform: scaleX(-1);
-  }
-  95% {
-    left: -60px;
-  }
-  100% {
-    left: -60px;
-    transform: scaleX(1);
-  }
-}
-
-/* ==========================================
-   PLASTIC STARFISH STUCK TO THE "GLASS"
-   ========================================== */
-/* Starfish #1 - Top right corner */
-.bg-gradient-to-br::before {
-  content: '⭐';
-  position: fixed;
-  top: 15%;
-  right: 10%;
-  font-size: 32px;
-  pointer-events: none;
-  z-index: 4;
-  opacity: 0.85;
-  /* Make it look plasticky with filter */
-  filter: drop-shadow(3px 3px 6px rgba(0, 0, 0, 0.4)) saturate(1.5);
-  animation: starfishPulse 4s ease-in-out infinite;
-}
-
-/* Starfish #2 - Left side */
-.bg-gradient-to-br::after {
-  content: '⭐';
-  position: fixed;
-  top: 45%;
-  left: 8%;
-  font-size: 28px;
-  pointer-events: none;
-  z-index: 4;
-  opacity: 0.8;
-  filter: drop-shadow(3px 3px 6px rgba(0, 0, 0, 0.4)) saturate(1.5);
-  animation: starfishPulse 5s ease-in-out infinite;
-}
-
-/* Hide starfish when animations are off */
-body[data-animation-level="off"] .bg-gradient-to-br::before,
-body[data-animation-level="off"] .bg-gradient-to-br::after {
-  display: none;
-}
-
-/* Subtle pulse animation for starfish */
-@keyframes starfishPulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.85;
-  }
-  50% {
-    transform: scale(1.05);
-    opacity: 1;
-  }
-}
-
-/* ==========================================
-   TREASURE CHEST AT BOTTOM
-   ========================================== */
-/* Treasure chest decoration sitting on the sand */
-html::before {
-  content: '🏺';  /* Treasure vase/chest */
-  position: fixed;
-  bottom: 45px;  /* Sits on the sand */
-  left: 15%;
-  font-size: 36px;
-  pointer-events: none;
-  z-index: 5;
-  filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.5));
-  animation: treasureGlow 3s ease-in-out infinite;
-}
-
-/* Hide treasure when animations are off */
-body[data-animation-level="off"] html::before {
-  display: none;
-}
-
-/* Gentle glow effect for treasure */
-@keyframes treasureGlow {
-  0%, 100% {
-    filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.5));
-  }
-  50% {
-    filter: drop-shadow(4px 4px 12px rgba(255, 215, 0, 0.4));
   }
 }
 
