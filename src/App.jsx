@@ -266,8 +266,8 @@ const validateRotation = (rotation) => {
         {/* ✅ FIXED: Header with overflow handling */}
         <div className="bg-white rounded-lg shadow-lg  mb-8" style={{padding: '3rem', overflow: 'hidden'}}>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
-            <div className="text-center md:text-left" style={{minWidth: 0, flex: 1}}>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center justify-center md:justify-start gap-2" style={{flexWrap: 'wrap'}}>
+            <div className="text-center" style={{minWidth: 0, flex: 1}}>
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-800 flex items-center justify-center gap-2" style={{flexWrap: 'wrap'}}>
                 <Home className="text-purple-600" style={{flexShrink: 0}} />
                 <span style={{wordBreak: 'break-word'}}><span className="porthole-q">Q</span>ueerio House Hub</span>
               </h1>

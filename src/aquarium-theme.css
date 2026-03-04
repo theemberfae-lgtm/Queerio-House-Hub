@@ -195,6 +195,7 @@ body::before {
 
 /* This makes the Q show the colorful fish image inside it */
 .porthole-q {
+  position: relative;
   background-image: url('/fish-porthole.jpg');
   background-size: cover;
   background-position: center;
@@ -206,6 +207,26 @@ body::before {
   display: inline-block;
   /* Add a subtle border around the Q to make it pop */
   filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* The HOLE in the Q - shows fish in a circle! */
+.porthole-q::after {
+  content: '';
+  position: absolute;
+  /* Position in the center-right of the Q */
+  top: 48%;
+  left: 52%;
+  transform: translate(-50%, -50%);
+  width: 0.35em;  /* Size relative to font size */
+  height: 0.35em;
+  border-radius: 50%;  /* Make it a circle */
+  background-image: url('/fish-porthole.jpg');
+  background-size: cover;
+  background-position: center;
+  /* Border to make it stand out */
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  z-index: 10;
 }
 
 /* ============================================

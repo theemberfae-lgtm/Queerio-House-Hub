@@ -59,7 +59,7 @@ const Signup = () => {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Home className="text-purple-600" size={32} />
-            <h1 className="text-3xl font-bold text-gray-800"><span className="porthole-q">Q</span>ueerio House Hub</h1>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-800"><span className="porthole-q">Q</span>ueerio House Hub</h1>
           </div>
           <p className="text-gray-600">Create your account</p>
           {inviteEmail && (
