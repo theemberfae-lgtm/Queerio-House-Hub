@@ -54,25 +54,25 @@ const AdminSettingsUnified = ({ onDataChange }) => {
     setMessage('');
 
     try {
-      // Get the currently logged-in admin user so we can record who sent the invite
+      const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Call our Edge Function instead of inserting directly.
-      // supabase.functions.invoke() is how you call an Edge Function from your app —
-      // it's like sending a message to your secure helper on Supabase's servers.
-      const { data, error } = await supabase.functions.invoke('send-invite', {
-        body: {
-          email: inviteEmail.toLowerCase(),
-          invitedBy: user.id
-        }
-      });
+      const { error } = await supabase
+        .from('invites')
+        .insert([
+          {
+            email: inviteEmail.toLowerCase(),
+            token: token,
+            invited_by: user.id,
+            status: 'pending'
+          }
+        ]);
 
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
 
-      // No more manual link needed — Supabase emails the roommate automatically!
-      setMessage('✅ Invite email sent to ' + inviteEmail + '!');
+      setMessage('Invite sent successfully! Share this link: ' + window.location.origin + '/signup?token=' + token);
       setInviteEmail('');
       loadInvites();
     } catch (error) {
@@ -105,24 +105,17 @@ const AdminSettingsUnified = ({ onDataChange }) => {
     if (!confirm('Delete this user? This will also delete their auth account.')) return;
 
     try {
-      // Delete profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
+      // Call our Edge Function to delete both the profile AND the auth account.
+      // We need the Edge Function because deleting from Supabase Auth requires
+      // the secret service role key which can't be used in the frontend.
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId }
+      });
 
-      if (profileError) throw profileError;
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      // Delete auth user (requires admin)
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-      
-      if (authError) {
-        console.error('Auth deletion error:', authError);
-        setMessage('Profile deleted, but auth account may need manual deletion');
-      } else {
-        setMessage('User deleted successfully');
-      }
-
+      setMessage('User deleted successfully');
       loadUsers();
       if (onDataChange) onDataChange();
     } catch (error) {
@@ -324,15 +317,17 @@ const AdminSettingsUnified = ({ onDataChange }) => {
     }
     
     // ============================================
-    // DELETE THE PROFILE
+    // DELETE THE PROFILE + AUTH ACCOUNT
     // ============================================
     
-    const { error: deleteError } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', userId);
-    
+    // Call our Edge Function to delete both the profile AND the Supabase Auth account.
+    // The Edge Function handles both in one go using the secret service role key.
+    const { data: deleteData, error: deleteError } = await supabase.functions.invoke('delete-user', {
+      body: { userId }
+    });
+
     if (deleteError) throw deleteError;
+    if (deleteData?.error) throw new Error(deleteData.error);
     
     // Success!
     alert(`✓ ${userName} deleted successfully!\n\nCleaned up:\n- Item rotations\n- Chore assignments\n- Bill splits\n- Events`);
