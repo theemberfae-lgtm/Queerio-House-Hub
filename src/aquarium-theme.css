@@ -165,6 +165,50 @@ button:active {
 }
 
 /* ============================================
+   AQUARIUM TANK BACKGROUND
+   ============================================ */
+
+/* Main background - use the aquarium tank image */
+body {
+  background-image: url('/tank-background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+/* Fallback aqua color if image doesn't load */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, #00CED1 0%, #008B8B 100%);
+  z-index: -1;
+}
+
+/* ============================================
+   Q PORTHOLE EFFECT - Fish Swimming in the Q!
+   ============================================ */
+
+/* This makes the Q show the colorful fish image inside it */
+.porthole-q {
+  background-image: url('/fish-porthole.jpg');
+  background-size: cover;
+  background-position: center;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  font-weight: bold;
+  display: inline-block;
+  /* Add a subtle border around the Q to make it pop */
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* ============================================
    SIMPLE BUBBLE ANIMATIONS
    ============================================ */
 

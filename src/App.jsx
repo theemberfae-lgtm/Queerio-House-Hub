@@ -269,7 +269,7 @@ const validateRotation = (rotation) => {
             <div className="text-center md:text-left" style={{minWidth: 0, flex: 1}}>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center justify-center md:justify-start gap-2" style={{flexWrap: 'wrap'}}>
                 <Home className="text-purple-600" style={{flexShrink: 0}} />
-                <span style={{wordBreak: 'break-word'}}>Queerio House Hub</span>
+                <span style={{wordBreak: 'break-word'}}><span className="porthole-q">Q</span>ueerio House Hub</span>
               </h1>
               <p className="text-gray-600 text-sm md:text-base" style={{wordBreak: 'break-word'}}>
   {householdMembers.length > 0 
