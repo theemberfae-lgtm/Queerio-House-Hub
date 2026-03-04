@@ -190,26 +190,28 @@ body::before {
 }
 
 /* ============================================
-   Q PORTHOLE EFFECT - Fish Swimming in the Q!
+   SEA GRADIENT TEXT - Beautiful & Readable!
    ============================================ */
 
-/* This makes the Q show the colorful fish image inside it */
+/* This makes the text show a beautiful ocean gradient */
 .porthole-q {
-  position: relative;
-  background-image: url('/fish-porthole.jpg');
-  background-size: cover;
-  background-position: center;
+  background: linear-gradient(135deg, 
+    #00CED1 0%,      /* Bright cyan */
+    #20B2AA 25%,     /* Light sea green */
+    #48D1CC 50%,     /* Medium turquoise */
+    #00CED1 75%,     /* Back to cyan */
+    #5F9EA0 100%     /* Cadet blue */
+  );
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  color: transparent;
   font-weight: bold;
   display: inline-block;
-  /* Add a subtle border around the Q to make it pop */
-  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+  /* Add a subtle text shadow for depth */
+  filter: drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.2));
 }
 
-/* No circle in the hole - keep it simple! */
+/* No more problematic circles or fish images! */
 
 /* ============================================
    SIMPLE BUBBLE ANIMATIONS
