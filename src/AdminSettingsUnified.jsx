@@ -54,25 +54,25 @@ const AdminSettingsUnified = ({ onDataChange }) => {
     setMessage('');
 
     try {
-      const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
-      
+      // Get the currently logged-in admin user so we can record who sent the invite
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { error } = await supabase
-        .from('invites')
-        .insert([
-          {
-            email: inviteEmail.toLowerCase(),
-            token: token,
-            invited_by: user.id
-            // 'status' column removed — it doesn't exist in the Supabase invites table
-          }
-        ]);
+      // Call our Edge Function instead of inserting directly.
+      // supabase.functions.invoke() is how you call an Edge Function from your app —
+      // it's like sending a message to your secure helper on Supabase's servers.
+      const { data, error } = await supabase.functions.invoke('send-invite', {
+        body: {
+          email: inviteEmail.toLowerCase(),
+          invitedBy: user.id
+        }
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      setMessage('Invite sent successfully! Share this link: ' + window.location.origin + '/signup?token=' + token + '&email=' + encodeURIComponent(inviteEmail.toLowerCase()));
+      // No more manual link needed — Supabase emails the roommate automatically!
+      setMessage('✅ Invite email sent to ' + inviteEmail + '!');
       setInviteEmail('');
       loadInvites();
     } catch (error) {
