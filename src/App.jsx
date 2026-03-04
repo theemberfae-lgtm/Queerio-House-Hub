@@ -261,7 +261,7 @@ const validateRotation = (rotation) => {
   };
 };
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 flex justify-center" style={{paddingBottom: '144px'}}>
+    <div className="min-h-screen flex justify-center" style={{paddingBottom: '144px'}}>
       <div className="w-full max-w-6xl px-4 md:px-16 py-4 md:py-8">
         {/* ✅ FIXED: Header with overflow handling */}
         <div className="bg-white rounded-lg shadow-lg  mb-8" style={{padding: '3rem', overflow: 'hidden'}}>
