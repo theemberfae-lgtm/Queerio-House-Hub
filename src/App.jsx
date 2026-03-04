@@ -1,3 +1,4 @@
+/* Purple icon fix */
 import React, { useState, useEffect } from 'react';
 import { Home, DollarSign, ShoppingCart, Bell, CheckCircle, Users, User, Settings, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -92,7 +93,7 @@ const App = () => {
     Ember: 'bg-orange-200 text-orange-800', 
     Eva: 'bg-green-200 text-green-800', 
     Elle: 'bg-blue-200 text-blue-800', 
-    Illari: 'bg-cyan-200 text-cyan-800' 
+    Illari: 'bg-purple-200 text-purple-800' 
   };
 
   useEffect(() => {
