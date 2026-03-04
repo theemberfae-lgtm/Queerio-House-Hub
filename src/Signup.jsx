@@ -60,14 +60,14 @@ const Signup = () => {
       backgroundPosition: 'center',
       backgroundAttachment: 'fixed'
     }}>
-      <div className="rounded-lg shadow-lg p-8 w-full max-w-md" style={{background: 'rgba(224, 247, 250, 0.9)', backdropFilter: 'blur(10px)'}}>
+      <div className="rounded-lg shadow-lg p-8 w-full max-w-md" style={{background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)'}}>
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-800"><span className="porthole-q">Q</span>ueerio House Hub</h1>
           </div>
           <p className="text-gray-600">Create your account</p>
           {inviteEmail && (
-            <p className="text-sm text-purple-600 mt-2">
+            <p className="text-sm text-cyan-600 mt-2">
               Invited as: {inviteEmail}
             </p>
           )}
@@ -89,7 +89,7 @@ const Signup = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
               placeholder="Your name"
             />
           </div>
@@ -115,7 +115,7 @@ const Signup = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
               placeholder="••••••••"
             />
           </div>
@@ -129,7 +129,7 @@ const Signup = () => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
               placeholder="••••••••"
             />
           </div>
@@ -137,7 +137,7 @@ const Signup = () => {
           <button
             type="submit"
             disabled={loading || !inviteToken || !inviteEmail}
-            className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            className="w-full bg-cyan-600 text-white py-3 rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
             {loading ? 'Creating account...' : 'Create Account'}
           </button>
@@ -145,7 +145,7 @@ const Signup = () => {
 
         <p className="text-center text-sm text-gray-600 mt-6">
           Already have an account?{' '}
-          <a href="/login" className="text-purple-600 hover:underline">
+          <a href="/login" className="text-cyan-600 hover:underline">
             Sign in
           </a>
         </p>

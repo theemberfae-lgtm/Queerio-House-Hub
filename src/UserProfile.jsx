@@ -258,14 +258,14 @@ const UserProfile = () => {
 
   const showMessage = (text, type) => {
     setMessage({ text, type });
-    setTimeout(() => setMessage(null), 5000); // Show for 5 seconds instead of 3
+    setTimeout(() => setMessage(null), 3000);
   };
 
   const colorOptions = [
     { value: 'orange', label: 'Orange', class: 'bg-orange-200 text-orange-800' },
     { value: 'green', label: 'Green', class: 'bg-green-200 text-green-800' },
     { value: 'blue', label: 'Blue', class: 'bg-blue-200 text-blue-800' },
-    { value: 'purple', label: 'Purple', class: 'bg-purple-200 text-purple-800' },
+    { value: 'purple', label: 'Purple', class: 'bg-cyan-200 text-cyan-800' },
     { value: 'pink', label: 'Pink', class: 'bg-pink-200 text-pink-800' },
     { value: 'yellow', label: 'Yellow', class: 'bg-yellow-200 text-yellow-800' },
     { value: 'red', label: 'Red', class: 'bg-red-200 text-red-800' },
@@ -284,32 +284,24 @@ const UserProfile = () => {
     <div className="bg-white rounded-lg shadow-lg" style={{padding: '3rem', overflow: 'hidden'}}>
       <h2 className="text-2xl md:text-3xl font-bold mb-6">Your Profile</h2>
       
-      {/* Success/Error Messages - More prominent! */}
+      {/* Messages */}
       {message && (
         <div 
-          className={`mb-6 rounded-lg border-2 font-semibold text-center ${
-            message.type === 'success' 
-              ? 'bg-green-50 text-green-800 border-green-400' 
-              : 'bg-red-50 text-red-800 border-red-400'
+          className={`mb-4 rounded-lg ${
+            message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
           }`}
-          style={{
-            padding: '1.25rem', 
-            overflow: 'hidden',
-            animation: 'slideDown 0.3s ease-out'
-          }}
+          style={{padding: '1rem', overflow: 'hidden'}}
         >
-          <p className="text-lg" style={{wordBreak: 'break-word'}}>
-            {message.text}
-          </p>
+          <p style={{wordBreak: 'break-word'}}>{message.text}</p>
         </div>
       )}
       
       {/* ========================================
           PERSONAL INFORMATION
           ======================================== */}
-      <div className="mb-8 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-purple-200" style={{padding: '1.5rem', overflow: 'hidden'}}>
+      <div className="mb-8 bg-gradient-to-br from-cyan-50 to-pink-50 rounded-lg border-2 border-cyan-200" style={{padding: '1.5rem', overflow: 'hidden'}}>
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <User className="text-purple-600" size={24} style={{flexShrink: 0}} />
+          <User className="text-cyan-600" size={24} style={{flexShrink: 0}} />
           <span>Personal Information</span>
         </h3>
         
@@ -322,7 +314,7 @@ const UserProfile = () => {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full border-2 border-cyan-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
             style={{padding: '14px'}}
             placeholder="Your name"
           />
@@ -340,7 +332,7 @@ const UserProfile = () => {
             type="text"
             value={pronouns}
             onChange={(e) => setPronouns(e.target.value)}
-            className="w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full border-2 border-cyan-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
             style={{padding: '14px'}}
             placeholder="e.g., she/her, he/him, they/them"
           />
@@ -352,14 +344,14 @@ const UserProfile = () => {
         {/* Birthday Input */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-            <Calendar size={16} className="text-purple-600" />
+            <Calendar size={16} className="text-cyan-600" />
             Birthday
           </label>
           <input
             type="date"
             value={birthday}
             onChange={(e) => setBirthday(e.target.value)}
-            className="w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full border-2 border-cyan-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
             style={{padding: '14px'}}
           />
           <p className="text-xs text-gray-600 mt-1">
@@ -372,7 +364,7 @@ const UserProfile = () => {
         {/* Color Selector */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-            <Palette size={16} className="text-purple-600" />
+            <Palette size={16} className="text-cyan-600" />
             Your Color
           </label>
           <p className="text-xs text-gray-600 mb-3">
@@ -385,7 +377,7 @@ const UserProfile = () => {
                 onClick={() => setColor(option.value)}
                 className={`rounded-lg border-2 transition-all ${
                   color === option.value
-                    ? 'border-purple-600 ring-2 ring-purple-300'
+                    ? 'border-cyan-600 ring-2 ring-cyan-300'
                     : 'border-gray-300 hover:border-purple-400'
                 } ${option.class}`}
                 style={{
@@ -509,17 +501,17 @@ const UserProfile = () => {
       </div>
       
       {/* ========================================
-          APPEARANCE & SOUND - TEMPORARILY HIDDEN
+          APPEARANCE & SOUND
           ======================================== */}
-      {/* Commented out for now - can be re-enabled later
       <div className="mb-8">
         <h3 className="text-lg font-semibold mb-4">Appearance & Sound</h3>
         
   
         
-        <div className="bg-purple-50 rounded-lg border-2 border-purple-200" style={{padding: '1.5rem', overflow: 'hidden'}}>
+        {/* Animation Level Selector */}
+        <div className="bg-cyan-50 rounded-lg border-2 border-cyan-200" style={{padding: '1.5rem', overflow: 'hidden'}}>
           <div className="flex items-center gap-2 mb-3">
-            <Waves className="text-purple-600" size={24} style={{flexShrink: 0}} />
+            <Waves className="text-cyan-600" size={24} style={{flexShrink: 0}} />
             <h4 className="font-semibold text-base md:text-lg">Animation Intensity</h4>
           </div>
           <p className="text-xs md:text-sm text-gray-600 mb-4">
@@ -538,7 +530,7 @@ const UserProfile = () => {
                 onClick={() => setAnimationLevel(option.value)}
                 className={`rounded-lg border-2 transition-all text-left ${
                   animationLevel === option.value
-                    ? 'border-purple-600 bg-purple-100'
+                    ? 'border-cyan-600 bg-cyan-100'
                     : 'border-gray-300 bg-white hover:border-purple-400'
                 }`}
                 style={{
@@ -598,30 +590,25 @@ const UserProfile = () => {
           </div>
         </div>
       </div>
-      */}
-      
       
       {/* Save Button */}
       <div className="flex gap-4">
         <button
           onClick={savePreferences}
           disabled={saving}
-          className="flex-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 font-semibold transition-all"
+          className="flex-1 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:bg-gray-400 font-semibold"
           style={{
             padding: '12px',
             whiteSpace: 'nowrap'
           }}
         >
           {saving ? (
-            <span className="flex items-center justify-center gap-2">
-              <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-              Saving...
-            </span>
+            'Saving...'
           ) : (
-            <span className="flex items-center justify-center gap-2">
-              <Save className="inline" size={20} />
+            <>
+              <Save className="inline mr-2" size={20} />
               Save All Changes
-            </span>
+            </>
           )}
         </button>
       </div>

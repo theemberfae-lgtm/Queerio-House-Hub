@@ -33,7 +33,7 @@ const Login = () => {
       backgroundPosition: 'center',
       backgroundAttachment: 'fixed'
     }}>
-      <div className="rounded-lg shadow-lg p-8 w-full max-w-md" style={{background: 'rgba(224, 247, 250, 0.9)', backdropFilter: 'blur(10px)'}}>
+      <div className="rounded-lg shadow-lg p-8 w-full max-w-md" style={{background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)'}}>
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-800"><span className="porthole-q">Q</span>ueerio House Hub</h1>
@@ -57,7 +57,7 @@ const Login = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
               placeholder="your@email.com"
             />
           </div>
@@ -71,7 +71,7 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
               placeholder="••••••••"
             />
           </div>
@@ -79,7 +79,7 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            className="w-full bg-cyan-600 text-white py-3 rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>

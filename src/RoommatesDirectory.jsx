@@ -62,7 +62,7 @@ const RoommatesDirectory = () => {
       orange: 'bg-orange-200 text-orange-800 border-orange-400',
       green: 'bg-green-200 text-green-800 border-green-400',
       blue: 'bg-blue-200 text-blue-800 border-blue-400',
-      purple: 'bg-purple-200 text-purple-800 border-purple-400',
+      purple: 'bg-cyan-200 text-cyan-800 border-purple-400',
       pink: 'bg-pink-200 text-pink-800 border-pink-400',
       yellow: 'bg-yellow-200 text-yellow-800 border-yellow-400',
       red: 'bg-red-200 text-red-800 border-red-400',
@@ -93,7 +93,7 @@ const RoommatesDirectory = () => {
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
-          <Users className="text-purple-600" size={32} />
+          <Users className="text-cyan-600" size={32} />
           <h2 className="text-2xl md:text-3xl font-bold">Roommates</h2>
         </div>
         <p className="text-gray-600">Your household members</p>
@@ -104,7 +104,7 @@ const RoommatesDirectory = () => {
         {roommates.map((roommate) => (
           <div
             key={roommate.id}
-            className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-purple-200"
+            className="bg-gradient-to-br from-cyan-50 to-pink-50 rounded-lg border-2 border-cyan-200"
             style={{padding: '1.5rem', overflow: 'hidden'}}
           >
             {/* Name and Color Badge */}
@@ -124,7 +124,7 @@ const RoommatesDirectory = () => {
                   )}
                   {roommate.role === 'admin' && (
                     <span 
-                      className="text-xs bg-purple-100 text-purple-700 rounded font-semibold"
+                      className="text-xs bg-cyan-100 text-cyan-700 rounded font-semibold"
                       style={{padding: '6px 12px', whiteSpace: 'nowrap'}}
                     >
                       Admin
@@ -158,7 +158,7 @@ const RoommatesDirectory = () => {
               {/* Email - only show if they allow it */}
               {roommate.show_email !== false && roommate.email && (
                 <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <Mail size={16} className="text-purple-600 flex-shrink-0" />
+                  <Mail size={16} className="text-cyan-600 flex-shrink-0" />
                   <span className="break-all">{roommate.email}</span>
                 </div>
               )}
@@ -166,7 +166,7 @@ const RoommatesDirectory = () => {
               {/* Birthday - only show if they allow it */}
               {roommate.show_birthday !== false && roommate.birthday && (
                 <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <Calendar size={16} className="text-purple-600 flex-shrink-0" />
+                  <Calendar size={16} className="text-cyan-600 flex-shrink-0" />
                   <span>Birthday: {formatBirthday(roommate.birthday)}</span>
                 </div>
               )}

@@ -102,16 +102,16 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
     <div className="space-y-6">
       {/* Financial Summary */}
       <div className="bg-white rounded-lg shadow-lg" style={{padding: '3rem', overflow: 'hidden'}}>
-        <h2 className="text-2xl font-bold mb-6">Welcome back, {profile.name}!</h2>
+        <h2 className="text-2xl font-bold mb-6">Welcome back, {profile.name}! 👋</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {/* Total Owed */}
           <div 
-            className={`rounded-lg border-2 ${totalCredits > 0.01 ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300' : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200'}`}
+            className={`rounded-lg border-2 ${totalCredits > 0.01 ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300' : 'bg-gradient-to-br from-cyan-50 to-pink-50 border-cyan-200'}`}
             style={{padding: '1.5rem', overflow: 'hidden'}}
           >
             <div className="flex items-center gap-2 mb-2" style={{overflow: 'hidden'}}>
-              <DollarSign className={totalCredits > 0.01 ? 'text-green-600' : 'text-purple-600'} size={24} style={{flexShrink: 0}} />
+              <DollarSign className={totalCredits > 0.01 ? 'text-green-600' : 'text-cyan-600'} size={24} style={{flexShrink: 0}} />
               <h3 className="font-semibold text-gray-700" style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
                 {totalCredits > 0.01 ? 'You Have Credit' : 'You Owe'}
               </h3>
@@ -128,11 +128,11 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
                 <p className="text-3xl font-bold text-green-600" style={{wordBreak: 'break-word'}}>
                   $0.00
                 </p>
-                <p className="text-sm text-gray-600 mt-1">All caught up!</p>
+                <p className="text-sm text-gray-600 mt-1">All caught up! 🎉</p>
               </>
             ) : (
               <>
-                <p className="text-3xl font-bold text-purple-600" style={{wordBreak: 'break-word'}}>
+                <p className="text-3xl font-bold text-cyan-600" style={{wordBreak: 'break-word'}}>
                   ${totalOwed.toFixed(2)}
                 </p>
                 <p className="text-sm text-gray-600 mt-1" style={{whiteSpace: 'nowrap'}}>
@@ -178,7 +178,7 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
             {myBills.map(bill => (
               <div 
                 key={bill.id} 
-                className={`rounded-lg border-l-4 ${bill.iPaid ? 'bg-green-50 border-green-500' : 'bg-purple-50 border-purple-500'}`}
+                className={`rounded-lg border-l-4 ${bill.iPaid ? 'bg-green-50 border-green-500' : 'bg-cyan-50 border-cyan-500'}`}
                 style={{padding: '1rem', overflow: 'hidden'}}
               >
                 <div className="flex justify-between items-start gap-4">
@@ -213,7 +213,7 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
                     )}
                   </div>
                   <p 
-                    className={`text-xl font-bold ${bill.iPaid ? 'text-green-600' : 'text-purple-600'}`}
+                    className={`text-xl font-bold ${bill.iPaid ? 'text-green-600' : 'text-cyan-600'}`}
                     style={{flexShrink: 0, whiteSpace: 'nowrap'}}
                   >
                     ${bill.myShare.toFixed(2)}
@@ -280,7 +280,7 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
               >
                 <p className="font-semibold" style={{wordBreak: 'break-word'}}>{event.title}</p>
                 <p className="text-sm text-gray-600" style={{wordBreak: 'break-word'}}>
-                  {new Date(event.date + 'T00:00:00').toLocaleDateString()}
+                  {new Date(event.date).toLocaleDateString()}
                   {event.time && ` at ${event.time}`}
                 </p>
               </div>
