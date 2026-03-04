@@ -1,4 +1,4 @@
-/* Purple profile fix */
+/* Removed appearance card */
 // ============================================
 // COMPLETE USER PROFILE WITH PRONOUNS & PRIVACY
 // ============================================
@@ -6,11 +6,10 @@
 // - Edit name, birthday, pronouns, color
 // - Privacy toggles for email and birthday visibility
 // - Auto-creates birthday event ONLY if show_birthday is true
-// - Sound and animation preferences
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { Save, Waves, User, Calendar, Palette, Eye, EyeOff } from 'lucide-react';
+import { Save, User, Calendar, Palette, Eye, EyeOff } from 'lucide-react';
 
 const UserProfile = () => {
   const { supabase, profile, updateProfile } = useAuth();
@@ -499,97 +498,6 @@ const UserProfile = () => {
         <p className="text-xs text-gray-500 mt-2">
           ℹ️ Email cannot be changed here. Contact your admin if you need to update it.
         </p>
-      </div>
-      
-      {/* ========================================
-          APPEARANCE & SOUND
-          ======================================== */}
-      <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4">Appearance & Sound</h3>
-        
-  
-        
-        {/* Animation Level Selector */}
-        <div className="bg-cyan-50 rounded-lg border-2 border-cyan-200" style={{padding: '1.5rem', overflow: 'hidden'}}>
-          <div className="flex items-center gap-2 mb-3">
-            <Waves className="text-cyan-600" size={24} style={{flexShrink: 0}} />
-            <h4 className="font-semibold text-base md:text-lg">Animation Intensity</h4>
-          </div>
-          <p className="text-xs md:text-sm text-gray-600 mb-4">
-            Control animation levels. Lower settings improve performance.
-          </p>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { value: 'off', label: 'Off', desc: 'No animations' },
-              { value: 'subtle', label: 'Subtle', desc: 'Minimal motion' },
-              { value: 'medium', label: 'Medium', desc: 'Balanced' },
-              { value: 'full', label: 'Full', desc: 'All effects' }
-            ].map(option => (
-              <button
-                key={option.value}
-                onClick={() => setAnimationLevel(option.value)}
-                className={`rounded-lg border-2 transition-all text-left ${
-                  animationLevel === option.value
-                    ? 'border-cyan-600 bg-cyan-100'
-                    : 'border-gray-300 bg-white hover:border-purple-400'
-                }`}
-                style={{
-                  padding: '1rem',
-                  overflow: 'hidden'
-                }}
-              >
-                <div className="font-semibold text-sm md:text-base mb-1" style={{whiteSpace: 'nowrap'}}>{option.label}</div>
-                <div className="text-xs text-gray-600" style={{whiteSpace: 'nowrap'}}>{option.desc}</div>
-              </button>
-            ))}
-          </div>
-          
-          <div className="mt-4 bg-white rounded border" style={{padding: '1rem'}}>
-            <p className="text-xs md:text-sm font-semibold mb-2">Preview:</p>
-            <div className="relative h-20 bg-gradient-to-b from-cyan-100 to-blue-200 rounded overflow-hidden">
-              {animationLevel !== 'off' && (
-                <>
-                  <div 
-                    className={`absolute bottom-0 left-1/4 w-4 h-4 bg-white rounded-full opacity-50 ${
-                      animationLevel === 'full' ? 'animate-float-slow' :
-                      animationLevel === 'medium' ? 'animate-float-slower' :
-                      'animate-float-slowest'
-                    }`}
-                    style={{ animationDelay: '0s' }}
-                  />
-                  <div 
-                    className={`absolute bottom-0 left-1/2 w-3 h-3 bg-white rounded-full opacity-40 ${
-                      animationLevel === 'full' ? 'animate-float-slow' :
-                      animationLevel === 'medium' ? 'animate-float-slower' :
-                      'animate-float-slowest'
-                    }`}
-                    style={{ animationDelay: '0.5s' }}
-                  />
-                  {animationLevel !== 'subtle' && (
-                    <div 
-                      className={`absolute bottom-0 left-3/4 w-5 h-5 bg-white rounded-full opacity-30 ${
-                        animationLevel === 'full' ? 'animate-float-slow' : 'animate-float-slower'
-                      }`}
-                      style={{ animationDelay: '1s' }}
-                    />
-                  )}
-                  {animationLevel === 'full' && (
-                    <>
-                      <div className="absolute bottom-0 left-1/3 w-2 h-2 bg-white rounded-full opacity-60 animate-float-slow" style={{ animationDelay: '1.5s' }} />
-                      <div className="absolute bottom-0 left-2/3 w-3 h-3 bg-white rounded-full opacity-45 animate-float-slower" style={{ animationDelay: '2s' }} />
-                    </>
-                  )}
-                </>
-              )}
-              {animationLevel === 'off' && (
-                <div className="flex items-center justify-center h-full text-gray-500 text-sm">
-                  No animations
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
       </div>
       
       {/* Save Button */}
