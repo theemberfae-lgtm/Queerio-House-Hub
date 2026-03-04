@@ -106,6 +106,42 @@ export const AuthProvider = ({ children }) => {
     return authData;
   };
 
+  // Called when a user arrives via the Supabase magic link invite email.
+  // In that case they're already authenticated — we just need to create
+  // their profile and mark the invite as used. No password needed!
+  const completeInviteSignup = async (userId, email, name, inviteToken) => {
+    // Verify the invite token is valid and matches the email
+    const { data: invite, error: inviteError } = await supabase
+      .from('invites')
+      .select('*')
+      .eq('token', inviteToken)
+      .eq('email', email)
+      .eq('used', false)
+      .single();
+
+    if (inviteError || !invite) {
+      throw new Error('Invalid or expired invite');
+    }
+
+    // Create the profile — the auth account already exists from the magic link
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: userId,
+        email: email,
+        name: name,
+        role: 'user'
+      });
+
+    if (profileError) throw profileError;
+
+    // Mark the invite as used so it can't be reused
+    await supabase
+      .from('invites')
+      .update({ used: true, used_at: new Date().toISOString() })
+      .eq('id', invite.id);
+  };
+
   const signIn = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -143,6 +179,7 @@ export const AuthProvider = ({ children }) => {
     profile,
     loading,
     signUp,
+    completeInviteSignup,
     signIn,
     signOut,
     updateProfile,

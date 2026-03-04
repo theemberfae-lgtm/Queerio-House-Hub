@@ -1,4 +1,3 @@
-// Input padding update
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -14,7 +13,10 @@ const Signup = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signUp } = useAuth();
+
+  // Get both signUp (manual flow) and completeInviteSignup (magic link flow)
+  // Also get user — if user exists, they arrived via the Supabase magic link
+  const { signUp, completeInviteSignup, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,29 +25,44 @@ const Signup = () => {
     }
   }, [inviteToken, inviteEmail]);
 
+  // If user is already authenticated AND has a token, they came via the magic link email.
+  // We'll show a simpler form — just ask for their name, no password needed.
+  const isAlreadyAuthenticated = !!user;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
 
     if (!inviteToken || !inviteEmail) {
       setError('Invalid invite link');
       return;
     }
 
+    // Password validation only needed if NOT coming via magic link
+    if (!isAlreadyAuthenticated) {
+      if (password !== confirmPassword) {
+        setError('Passwords do not match');
+        return;
+      }
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters');
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
-      await signUp(inviteEmail, password, name, inviteToken);
+      if (isAlreadyAuthenticated) {
+        // MAGIC LINK FLOW: User is already logged in via Supabase invite email.
+        // Just create their profile — no need to create an auth account again.
+        await completeInviteSignup(user.id, inviteEmail, name, inviteToken);
+      } else {
+        // MANUAL FLOW: User got the link copy-pasted from the admin.
+        // Create both the auth account and profile from scratch.
+        await signUp(inviteEmail, password, name, inviteToken);
+      }
+      // Either way, send them home once done!
       navigate('/');
     } catch (err) {
       setError(err.message || 'Failed to create account');
@@ -55,21 +72,16 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex justify-center" style={{
-      backgroundImage: 'url(/tank-background.jpg)',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundAttachment: 'fixed'
-    }}>
-      <div className="w-full max-w-6xl px-4 md:px-16 py-4 md:py-8 flex items-center justify-center">
-      <div className="rounded-lg shadow-lg w-full max-w-md" style={{padding: '3rem', background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)'}}>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 flex items-center justify-center px-4">
+      <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-800"><span className="porthole-q">Queerio House Hub</span></h1>
+            <Home className="text-purple-600" size={32} />
+            <h1 className="text-3xl font-bold text-gray-800">Queerio House Hub</h1>
           </div>
           <p className="text-gray-600">Create your account</p>
           {inviteEmail && (
-            <p className="text-sm text-cyan-600 mt-2">
+            <p className="text-sm text-purple-600 mt-2">
               Invited as: {inviteEmail}
             </p>
           )}
@@ -91,7 +103,7 @@ const Signup = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full px-6 py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-base"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               placeholder="Your name"
             />
           </div>
@@ -108,50 +120,54 @@ const Signup = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-6 py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-base"
-              placeholder="••••••••"
-            />
-          </div>
+          {/* Password fields only shown if NOT coming via magic link */}
+          {!isAlreadyAuthenticated && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="••••••••"
+                />
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              className="w-full px-6 py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-base"
-              placeholder="••••••••"
-            />
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="••••••••"
+                />
+              </div>
+            </>
+          )}
 
           <button
             type="submit"
             disabled={loading || !inviteToken || !inviteEmail}
-            className="w-full bg-cyan-600 text-white py-3 rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
-            {loading ? 'Creating account...' : 'Create Account'}
+            {loading ? 'Setting up your account...' : 'Create Account'}
           </button>
         </form>
 
         <p className="text-center text-sm text-gray-600 mt-6">
           Already have an account?{' '}
-          <a href="/login" className="text-cyan-600 hover:underline">
+          <a href="/login" className="text-purple-600 hover:underline">
             Sign in
           </a>
         </p>
-      </div>
       </div>
     </div>
   );
