@@ -54,7 +54,7 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{
+    <div className="min-h-screen flex items-center justify-center px-4 md:px-16 py-4 md:py-8" style={{
       backgroundImage: 'url(/tank-background.jpg)',
       backgroundSize: 'cover',
       backgroundPosition: 'center',
@@ -63,7 +63,7 @@ const Signup = () => {
       <div className="rounded-lg shadow-lg p-8 w-full max-w-md" style={{background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)'}}>
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-800"><span className="porthole-q">Q</span>ueerio House Hub</h1>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-800"><span className="porthole-q">Queerio House</span> Hub</h1>
           </div>
           <p className="text-gray-600">Create your account</p>
           {inviteEmail && (
