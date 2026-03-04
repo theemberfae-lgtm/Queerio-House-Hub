@@ -1,3 +1,4 @@
+// Input padding update
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
