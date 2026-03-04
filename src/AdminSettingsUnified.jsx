@@ -65,8 +65,8 @@ const AdminSettingsUnified = ({ onDataChange }) => {
           {
             email: inviteEmail.toLowerCase(),
             token: token,
-            invited_by: user.id,
-            status: 'pending'
+            invited_by: user.id
+            // 'status' column removed — it doesn't exist in the Supabase invites table
           }
         ]);
 
@@ -367,7 +367,7 @@ const AdminSettingsUnified = ({ onDataChange }) => {
           onClick={() => setActiveSection('invites')}
           className={`rounded-lg font-semibold text-sm md:text-base whitespace-nowrap ${
             activeSection === 'invites' 
-              ? 'bg-cyan-600 text-white' 
+              ? 'bg-purple-600 text-white' 
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
           style={{padding: '8px 16px'}}
@@ -378,7 +378,7 @@ const AdminSettingsUnified = ({ onDataChange }) => {
           onClick={() => setActiveSection('profiles')}
           className={`rounded-lg font-semibold text-sm md:text-base whitespace-nowrap ${
             activeSection === 'profiles' 
-              ? 'bg-cyan-600 text-white' 
+              ? 'bg-purple-600 text-white' 
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
           style={{padding: '8px 16px'}}
@@ -400,7 +400,7 @@ const AdminSettingsUnified = ({ onDataChange }) => {
       {activeSection === 'invites' && (
         <div className="space-y-6">
           {/* Invite Form */}
-          <div className="bg-cyan-50 border-2 border-cyan-200 rounded-lg" style={{padding: '1.5rem'}}>
+          <div className="bg-purple-50 border-2 border-purple-200 rounded-lg" style={{padding: '1.5rem'}}>
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <UserPlus size={20} />
               Invite New Roommate
@@ -415,7 +415,7 @@ const AdminSettingsUnified = ({ onDataChange }) => {
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                   required
-                  className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 text-sm md:text-base"
+                  className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
                   style={{padding: '10px'}}
                   placeholder="roommate@email.com"
                 />
@@ -423,7 +423,7 @@ const AdminSettingsUnified = ({ onDataChange }) => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 font-semibold text-sm md:text-base"
+                className="w-full bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold text-sm md:text-base"
                 style={{padding: '12px'}}
               >
                 {loading ? 'Sending...' : 'Send Invite'}
@@ -485,7 +485,7 @@ const AdminSettingsUnified = ({ onDataChange }) => {
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-medium text-sm md:text-base">{user.name || user.email}</p>
                       {user.is_admin && (
-                        <span className="text-xs bg-cyan-100 text-cyan-700 rounded" style={{padding: '2px 8px'}}>
+                        <span className="text-xs bg-purple-100 text-purple-700 rounded" style={{padding: '2px 8px'}}>
                           Admin
                         </span>
                       )}
@@ -592,7 +592,7 @@ const AdminSettingsUnified = ({ onDataChange }) => {
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-bold text-base md:text-lg">{user.name || 'No name set'}</p>
                           {user.is_admin && (
-                            <span className="text-xs bg-cyan-100 text-cyan-700 rounded" style={{padding: '4px 12px'}}>
+                            <span className="text-xs bg-purple-100 text-purple-700 rounded" style={{padding: '4px 12px'}}>
                               Admin
                             </span>
                           )}
