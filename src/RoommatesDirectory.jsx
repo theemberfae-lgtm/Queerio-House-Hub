@@ -62,7 +62,7 @@ const RoommatesDirectory = () => {
       orange: 'bg-orange-200 text-orange-800 border-orange-400',
       green: 'bg-green-200 text-green-800 border-green-400',
       blue: 'bg-blue-200 text-blue-800 border-blue-400',
-      purple: 'bg-cyan-200 text-cyan-800 border-purple-400',
+      purple: 'bg-purple-200 text-purple-800 border-purple-400',
       pink: 'bg-pink-200 text-pink-800 border-pink-400',
       yellow: 'bg-yellow-200 text-yellow-800 border-yellow-400',
       red: 'bg-red-200 text-red-800 border-red-400',

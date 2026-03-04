@@ -1,3 +1,4 @@
+/* Purple profile fix */
 // ============================================
 // COMPLETE USER PROFILE WITH PRONOUNS & PRIVACY
 // ============================================
@@ -265,7 +266,7 @@ const UserProfile = () => {
     { value: 'orange', label: 'Orange', class: 'bg-orange-200 text-orange-800' },
     { value: 'green', label: 'Green', class: 'bg-green-200 text-green-800' },
     { value: 'blue', label: 'Blue', class: 'bg-blue-200 text-blue-800' },
-    { value: 'purple', label: 'Purple', class: 'bg-cyan-200 text-cyan-800' },
+    { value: 'purple', label: 'Purple', class: 'bg-purple-200 text-purple-800' },
     { value: 'pink', label: 'Pink', class: 'bg-pink-200 text-pink-800' },
     { value: 'yellow', label: 'Yellow', class: 'bg-yellow-200 text-yellow-800' },
     { value: 'red', label: 'Red', class: 'bg-red-200 text-red-800' },
