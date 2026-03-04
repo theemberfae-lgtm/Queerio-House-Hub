@@ -72,7 +72,7 @@ const AdminSettingsUnified = ({ onDataChange }) => {
 
       if (error) throw error;
 
-      setMessage('Invite sent successfully! Share this link: ' + window.location.origin + '/signup?token=' + token);
+      setMessage('Invite sent successfully! Share this link: ' + window.location.origin + '/signup?token=' + token + '&email=' + encodeURIComponent(inviteEmail.toLowerCase()));
       setInviteEmail('');
       loadInvites();
     } catch (error) {
