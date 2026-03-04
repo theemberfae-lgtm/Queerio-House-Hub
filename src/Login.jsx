@@ -27,11 +27,15 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center px-4" style={{
+      backgroundImage: 'url(/tank-background.jpg)',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed'
+    }}>
+      <div className="rounded-lg shadow-lg p-8 w-full max-w-md" style={{background: 'rgba(224, 247, 250, 0.9)', backdropFilter: 'blur(10px)'}}>
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <Home className="text-purple-600" size={32} />
             <h1 className="text-4xl md:text-5xl font-bold text-gray-800"><span className="porthole-q">Q</span>ueerio House Hub</h1>
           </div>
           <p className="text-gray-600">Sign in to your account</p>

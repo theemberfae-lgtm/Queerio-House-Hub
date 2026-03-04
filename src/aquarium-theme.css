@@ -213,19 +213,19 @@ body::before {
 .porthole-q::after {
   content: '';
   position: absolute;
-  /* Position in the center of the Q's hole */
-  top: 45%;
-  left: 48%;
+  /* Position in the center of the Q's hole - adjusted for typical fonts */
+  top: 50%;
+  left: 50%;
   transform: translate(-50%, -50%);
-  width: 0.4em;  /* Size relative to font size */
-  height: 0.4em;
+  width: 0.45em;  /* Size relative to font size */
+  height: 0.45em;
   border-radius: 50%;  /* Make it a circle */
   background-image: url('/fish-porthole.jpg');
   background-size: cover;
   background-position: center;
-  /* Border to make it stand out */
-  border: 2px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  /* Stronger border to make it stand out more */
+  border: 3px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
   z-index: 10;
 }
 

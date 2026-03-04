@@ -261,14 +261,19 @@ const validateRotation = (rotation) => {
   };
 };
   return (
-    <div className="min-h-screen flex justify-center" style={{paddingBottom: '144px'}}>
+    <div className="min-h-screen flex justify-center" style={{
+      paddingBottom: '144px',
+      backgroundImage: 'url(/tank-background.jpg)',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed'
+    }}>
       <div className="w-full max-w-6xl px-4 md:px-16 py-4 md:py-8">
         {/* ✅ FIXED: Header with overflow handling */}
-        <div className="bg-white rounded-lg shadow-lg  mb-8" style={{padding: '3rem', overflow: 'hidden'}}>
+        <div className="rounded-lg shadow-lg mb-8" style={{padding: '3rem', overflow: 'hidden', background: 'rgba(224, 247, 250, 0.85)', backdropFilter: 'blur(10px)'}}>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
             <div className="text-center" style={{minWidth: 0, flex: 1}}>
               <h1 className="text-4xl md:text-5xl font-bold text-gray-800 flex items-center justify-center gap-2" style={{flexWrap: 'wrap'}}>
-                <Home className="text-purple-600" style={{flexShrink: 0}} />
                 <span style={{wordBreak: 'break-word'}}><span className="porthole-q">Q</span>ueerio House Hub</span>
               </h1>
               <p className="text-gray-600 text-sm md:text-base" style={{wordBreak: 'break-word'}}>
