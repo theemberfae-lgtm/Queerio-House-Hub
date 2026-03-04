@@ -3150,7 +3150,7 @@ const getAvailableChoresFor = (userId) => {
             {hasOldChores && <span className="ml-2 text-sm">⚠️</span>}
           </h3>
                   <div className="flex gap-2">
-  {personChores.length < 2 && availableChores.length > 0 && (
+  {personChores.length < 2 && availableChores.length > 0 && (isAdmin || userId === profile?.id) && (
     <>
       <select 
         onChange={(e) => { 
