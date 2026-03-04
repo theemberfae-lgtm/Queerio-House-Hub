@@ -27,16 +27,17 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 md:px-16 py-4 md:py-8" style={{
+    <div className="min-h-screen flex justify-center" style={{
       backgroundImage: 'url(/tank-background.jpg)',
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundAttachment: 'fixed'
     }}>
+      <div className="w-full max-w-6xl px-4 md:px-16 py-4 md:py-8 flex items-center justify-center">
       <div className="rounded-lg shadow-lg p-8 w-full max-w-md" style={{background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)'}}>
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-800"><span className="porthole-q">Queerio House</span> Hub</h1>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-800"><span className="porthole-q">Queerio House Hub</span></h1>
           </div>
           <p className="text-gray-600">Sign in to your account</p>
         </div>
@@ -88,6 +89,7 @@ const Login = () => {
         <p className="text-center text-sm text-gray-600 mt-6">
           Have an invite? Check your email for the signup link!
         </p>
+      </div>
       </div>
     </div>
   );
