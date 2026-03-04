@@ -163,6 +163,191 @@ const AdminSettingsUnified = ({ onDataChange }) => {
     setEditingUser(null);
     setEditForm({});
   };
+  const deleteProfile = async (userId) => {
+  if (!isAdmin) {
+    alert('Admin only');
+    return;
+  }
+  
+  // Don't allow deleting yourself
+  if (userId === profile.id) {
+    alert("You can't delete your own account! Ask another admin.");
+    return;
+  }
+  
+  const userToDelete = users.find(u => u.id === userId);
+  const userName = userToDelete.name || userToDelete.email;
+  
+  const confirmMessage = `Are you sure you want to delete ${userName}?\n\nThis will automatically:\n✓ Remove from all item rotations\n✓ Clear chore assignments\n✓ Remove from bill splits\n✓ Delete their profile\n\nThis cannot be undone!`;
+  
+  if (!confirm(confirmMessage)) {
+    return;
+  }
+  
+  try {
+    // ============================================
+    // AUTO-CLEANUP: Remove from all household data
+    // ============================================
+    
+    // Load current household data
+    const { data: householdData, error: loadError } = await supabase
+      .from('household_data')
+      .select('*')
+      .eq('key', 'app_data')
+      .single();
+    
+    if (loadError && loadError.code !== 'PGRST116') {
+      throw loadError;
+    }
+    
+    if (householdData && householdData.value) {
+      const data = typeof householdData.value === 'string' 
+        ? JSON.parse(householdData.value) 
+        : householdData.value;
+      
+      let changesMade = false;
+      
+      // 1. CLEAN UP ITEMS - Remove from rotations
+      if (data.items) {
+        data.items = data.items.map(item => {
+          const originalRotation = [...item.rotation];
+          
+          // Remove user from rotation
+          item.rotation = item.rotation.filter(id => {
+            // Remove if it matches userId OR the old name
+            return id !== userId && id !== userName;
+          });
+          
+          // If rotation was modified
+          if (originalRotation.length !== item.rotation.length) {
+            changesMade = true;
+            
+            // Adjust currentIndex if needed
+            if (item.currentIndex >= item.rotation.length && item.rotation.length > 0) {
+              item.currentIndex = 0;
+            }
+            
+            // Remove from skippedThisRound
+            if (item.skippedThisRound) {
+              item.skippedThisRound = item.skippedThisRound.filter(id => 
+                id !== userId && id !== userName
+              );
+            }
+          }
+          
+          return item;
+        });
+      }
+      
+      // 2. CLEAN UP MONTHLY CHORES - Clear assignments
+      if (data.monthlyChores) {
+        data.monthlyChores = data.monthlyChores.map(chore => {
+          if (chore.rotation && chore.rotation.length > 0) {
+            const assignedTo = chore.rotation[0];
+            
+            // If this user is assigned, clear it
+            if (assignedTo === userId || assignedTo === userName) {
+              chore.rotation = [];
+              chore.currentIndex = 0;
+              changesMade = true;
+            }
+          }
+          return chore;
+        });
+      }
+      
+      // 3. CLEAN UP ONE-OFF TASKS - Remove assigned tasks
+      if (data.oneOffTasks) {
+        const originalLength = data.oneOffTasks.length;
+        data.oneOffTasks = data.oneOffTasks.filter(task => 
+          task.assignedTo !== userId && task.assignedTo !== userName
+        );
+        
+        if (data.oneOffTasks.length !== originalLength) {
+          changesMade = true;
+        }
+      }
+      
+      // 4. CLEAN UP BILLS - Remove from splits
+      if (data.bills) {
+        data.bills = data.bills.map(bill => {
+          if (bill.splits && bill.splits[userId]) {
+            // Remove user from splits
+            delete bill.splits[userId];
+            
+            // Remove from payments
+            if (bill.payments && bill.payments[userId]) {
+              delete bill.payments[userId];
+            }
+            
+            changesMade = true;
+          }
+          return bill;
+        });
+      }
+      
+      // 5. CLEAN UP EVENTS - Remove user-created events
+      if (data.events) {
+        const originalLength = data.events.length;
+        data.events = data.events.filter(event => 
+          event.createdBy !== userId && !event.isBirthday
+        );
+        
+        if (data.events.length !== originalLength) {
+          changesMade = true;
+        }
+      }
+      
+      // 6. CLEAN UP CHORE HISTORY
+      if (data.choreHistory) {
+        data.choreHistory = data.choreHistory.map(chore => {
+          if (chore.userId === userId) {
+            return { ...chore, userId: null }; // Keep history but unlink user
+          }
+          return chore;
+        });
+      }
+      
+      // Save cleaned data back to database
+      if (changesMade) {
+        const { error: saveError } = await supabase
+          .from('household_data')
+          .upsert({
+            key: 'app_data',
+            value: JSON.stringify(data)
+          }, {
+            onConflict: 'key'
+          });
+        
+        if (saveError) throw saveError;
+      }
+    }
+    
+    // ============================================
+    // DELETE THE PROFILE
+    // ============================================
+    
+    const { error: deleteError } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
+    
+    if (deleteError) throw deleteError;
+    
+    // Success!
+    alert(`✓ ${userName} deleted successfully!\n\nCleaned up:\n- Item rotations\n- Chore assignments\n- Bill splits\n- Events`);
+    
+    // Reload data
+    loadUsers();
+    if (onDataChange) {
+      onDataChange(); // Trigger app-wide reload
+    }
+    
+  } catch (error) {
+    console.error('Error deleting profile:', error);
+    alert('Failed to delete profile: ' + error.message);
+  }
+};
 
   if (!isAdmin) {
     return (
@@ -430,6 +615,13 @@ const AdminSettingsUnified = ({ onDataChange }) => {
                       >
                         Edit Profile
                       </button>
+                      <button
+  onClick={() => deleteProfile(user.id)}
+  className="bg-red-500 text-white rounded hover:bg-red-600"
+  style={{padding: '6px 12px'}}
+>
+  Delete
+</button>
                     </div>
                   )}
                 </div>
