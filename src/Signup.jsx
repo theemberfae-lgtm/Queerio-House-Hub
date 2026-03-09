@@ -14,9 +14,7 @@ const Signup = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Get both signUp (manual flow) and completeInviteSignup (magic link flow)
-  // Also get user — if user exists, they arrived via the Supabase magic link
-  const { signUp, completeInviteSignup, user } = useAuth();
+  const { signUp, completeInviteSignup, user, supabase } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,8 +23,7 @@ const Signup = () => {
     }
   }, [inviteToken, inviteEmail]);
 
-  // If user is already authenticated AND has a token, they came via the magic link email.
-  // We'll show a simpler form — just ask for their name, no password needed.
+  // True if they arrived via Supabase magic link email (already logged in)
   const isAlreadyAuthenticated = !!user;
 
   const handleSubmit = async (e) => {
@@ -38,31 +35,40 @@ const Signup = () => {
       return;
     }
 
-    // Password validation only needed if NOT coming via magic link
-    if (!isAlreadyAuthenticated) {
-      if (password !== confirmPassword) {
-        setError('Passwords do not match');
-        return;
-      }
-      if (password.length < 6) {
-        setError('Password must be at least 6 characters');
-        return;
-      }
+    // Always require password — they need it to log in again in the future!
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
     }
 
     setLoading(true);
 
     try {
       if (isAlreadyAuthenticated) {
-        // MAGIC LINK FLOW: User is already logged in via Supabase invite email.
-        // Just create their profile — no need to create an auth account again.
+        // MAGIC LINK FLOW: Already logged in via Supabase invite email.
+        // We still need to:
+        // 1. Set their password so they can log in normally next time
+        // 2. Create their profile row in our database
+        
+        // Step 1: Set the password on their existing auth account
+        const { error: passwordError } = await supabase.auth.updateUser({ 
+          password: password 
+        });
+        if (passwordError) throw passwordError;
+
+        // Step 2: Create their profile and mark invite as used
         await completeInviteSignup(user.id, inviteEmail, name, inviteToken);
       } else {
-        // MANUAL FLOW: User got the link copy-pasted from the admin.
-        // Create both the auth account and profile from scratch.
+        // MANUAL FLOW: Got the link copy-pasted, not via email.
+        // Create both auth account and profile from scratch.
         await signUp(inviteEmail, password, name, inviteToken);
       }
-      // Either way, send them home once done!
+
+      // Either way, send them home!
       navigate('/');
     } catch (err) {
       setError(err.message || 'Failed to create account');
@@ -94,6 +100,7 @@ const Signup = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Name — always shown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Name
@@ -108,6 +115,7 @@ const Signup = () => {
             />
           </div>
 
+          {/* Email — always shown, locked to invite email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Email
@@ -120,38 +128,36 @@ const Signup = () => {
             />
           </div>
 
-          {/* Password fields only shown if NOT coming via magic link */}
-          {!isAlreadyAuthenticated && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="••••••••"
-                />
-              </div>
+          {/* Password — always shown so they can log in again later! */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="new-password"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="••••••••"
+            />
+          </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="••••••••"
-                />
-              </div>
-            </>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              autoComplete="new-password"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="••••••••"
+            />
+          </div>
 
           <button
             type="submit"
