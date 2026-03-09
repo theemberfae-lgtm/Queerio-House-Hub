@@ -54,25 +54,25 @@ const AdminSettingsUnified = ({ onDataChange }) => {
     setMessage('');
 
     try {
-      const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
-      
+      // Get the currently logged-in admin user so we can record who sent the invite
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { error } = await supabase
-        .from('invites')
-        .insert([
-          {
-            email: inviteEmail.toLowerCase(),
-            token: token,
-            invited_by: user.id,
-            status: 'pending'
-          }
-        ]);
+      // Call our Edge Function instead of inserting directly.
+      // supabase.functions.invoke() sends the request to our secure Edge Function
+      // on Supabase's servers, which handles both saving the invite and sending the email.
+      const { data, error } = await supabase.functions.invoke('send-invite', {
+        body: {
+          email: inviteEmail.toLowerCase(),
+          invitedBy: user.id
+        }
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      setMessage('Invite sent successfully! Share this link: ' + window.location.origin + '/signup?token=' + token);
+      // No more manual link needed — Supabase emails the roommate automatically!
+      setMessage('✅ Invite email sent to ' + inviteEmail + '!');
       setInviteEmail('');
       loadInvites();
     } catch (error) {
@@ -156,193 +156,152 @@ const AdminSettingsUnified = ({ onDataChange }) => {
     setEditingUser(null);
     setEditForm({});
   };
+
   const deleteProfile = async (userId) => {
-  if (!isAdmin) {
-    alert('Admin only');
-    return;
-  }
-  
-  // Don't allow deleting yourself
-  if (userId === profile.id) {
-    alert("You can't delete your own account! Ask another admin.");
-    return;
-  }
-  
-  const userToDelete = users.find(u => u.id === userId);
-  const userName = userToDelete.name || userToDelete.email;
-  
-  const confirmMessage = `Are you sure you want to delete ${userName}?\n\nThis will automatically:\n✓ Remove from all item rotations\n✓ Clear chore assignments\n✓ Remove from bill splits\n✓ Delete their profile\n\nThis cannot be undone!`;
-  
-  if (!confirm(confirmMessage)) {
-    return;
-  }
-  
-  try {
-    // ============================================
-    // AUTO-CLEANUP: Remove from all household data
-    // ============================================
-    
-    // Load current household data
-    const { data: householdData, error: loadError } = await supabase
-      .from('household_data')
-      .select('*')
-      .eq('key', 'app_data')
-      .single();
-    
-    if (loadError && loadError.code !== 'PGRST116') {
-      throw loadError;
+    if (!isAdmin) {
+      alert('Admin only');
+      return;
     }
     
-    if (householdData && householdData.value) {
-      const data = typeof householdData.value === 'string' 
-        ? JSON.parse(householdData.value) 
-        : householdData.value;
+    if (userId === profile.id) {
+      alert("You can't delete your own account! Ask another admin.");
+      return;
+    }
+    
+    const userToDelete = users.find(u => u.id === userId);
+    const userName = userToDelete.name || userToDelete.email;
+    
+    const confirmMessage = `Are you sure you want to delete ${userName}?\n\nThis will automatically:\n✓ Remove from all item rotations\n✓ Clear chore assignments\n✓ Remove from bill splits\n✓ Delete their profile\n\nThis cannot be undone!`;
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+    
+    try {
+      // ============================================
+      // AUTO-CLEANUP: Remove from all household data
+      // ============================================
       
-      let changesMade = false;
+      const { data: householdData, error: loadError } = await supabase
+        .from('household_data')
+        .select('*')
+        .eq('key', 'app_data')
+        .single();
       
-      // 1. CLEAN UP ITEMS - Remove from rotations
-      if (data.items) {
-        data.items = data.items.map(item => {
-          const originalRotation = [...item.rotation];
-          
-          // Remove user from rotation
-          item.rotation = item.rotation.filter(id => {
-            // Remove if it matches userId OR the old name
-            return id !== userId && id !== userName;
-          });
-          
-          // If rotation was modified
-          if (originalRotation.length !== item.rotation.length) {
-            changesMade = true;
-            
-            // Adjust currentIndex if needed
-            if (item.currentIndex >= item.rotation.length && item.rotation.length > 0) {
-              item.currentIndex = 0;
-            }
-            
-            // Remove from skippedThisRound
-            if (item.skippedThisRound) {
-              item.skippedThisRound = item.skippedThisRound.filter(id => 
-                id !== userId && id !== userName
-              );
-            }
-          }
-          
-          return item;
-        });
+      if (loadError && loadError.code !== 'PGRST116') {
+        throw loadError;
       }
       
-      // 2. CLEAN UP MONTHLY CHORES - Clear assignments
-      if (data.monthlyChores) {
-        data.monthlyChores = data.monthlyChores.map(chore => {
-          if (chore.rotation && chore.rotation.length > 0) {
-            const assignedTo = chore.rotation[0];
+      if (householdData && householdData.value) {
+        const data = typeof householdData.value === 'string' 
+          ? JSON.parse(householdData.value) 
+          : householdData.value;
+        
+        let changesMade = false;
+        
+        // 1. CLEAN UP ITEMS - Remove from rotations
+        if (data.items) {
+          data.items = data.items.map(item => {
+            const originalRotation = [...item.rotation];
+            item.rotation = item.rotation.filter(id => id !== userId && id !== userName);
             
-            // If this user is assigned, clear it
-            if (assignedTo === userId || assignedTo === userName) {
-              chore.rotation = [];
-              chore.currentIndex = 0;
+            if (originalRotation.length !== item.rotation.length) {
+              changesMade = true;
+              if (item.currentIndex >= item.rotation.length && item.rotation.length > 0) {
+                item.currentIndex = 0;
+              }
+              if (item.skippedThisRound) {
+                item.skippedThisRound = item.skippedThisRound.filter(id => 
+                  id !== userId && id !== userName
+                );
+              }
+            }
+            return item;
+          });
+        }
+        
+        // 2. CLEAN UP MONTHLY CHORES - Clear assignments
+        if (data.monthlyChores) {
+          data.monthlyChores = data.monthlyChores.map(chore => {
+            if (chore.rotation && chore.rotation.length > 0) {
+              const assignedTo = chore.rotation[0];
+              if (assignedTo === userId || assignedTo === userName) {
+                chore.rotation = [];
+                chore.currentIndex = 0;
+                changesMade = true;
+              }
+            }
+            return chore;
+          });
+        }
+        
+        // 3. CLEAN UP ONE-OFF TASKS
+        if (data.oneOffTasks) {
+          const originalLength = data.oneOffTasks.length;
+          data.oneOffTasks = data.oneOffTasks.filter(task => 
+            task.assignedTo !== userId && task.assignedTo !== userName
+          );
+          if (data.oneOffTasks.length !== originalLength) changesMade = true;
+        }
+        
+        // 4. CLEAN UP BILLS - Remove from splits
+        if (data.bills) {
+          data.bills = data.bills.map(bill => {
+            if (bill.splits && bill.splits[userId]) {
+              delete bill.splits[userId];
+              if (bill.payments && bill.payments[userId]) delete bill.payments[userId];
               changesMade = true;
             }
-          }
-          return chore;
-        });
-      }
-      
-      // 3. CLEAN UP ONE-OFF TASKS - Remove assigned tasks
-      if (data.oneOffTasks) {
-        const originalLength = data.oneOffTasks.length;
-        data.oneOffTasks = data.oneOffTasks.filter(task => 
-          task.assignedTo !== userId && task.assignedTo !== userName
-        );
-        
-        if (data.oneOffTasks.length !== originalLength) {
-          changesMade = true;
-        }
-      }
-      
-      // 4. CLEAN UP BILLS - Remove from splits
-      if (data.bills) {
-        data.bills = data.bills.map(bill => {
-          if (bill.splits && bill.splits[userId]) {
-            // Remove user from splits
-            delete bill.splits[userId];
-            
-            // Remove from payments
-            if (bill.payments && bill.payments[userId]) {
-              delete bill.payments[userId];
-            }
-            
-            changesMade = true;
-          }
-          return bill;
-        });
-      }
-      
-      // 5. CLEAN UP EVENTS - Remove user-created events
-      if (data.events) {
-        const originalLength = data.events.length;
-        data.events = data.events.filter(event => 
-          event.createdBy !== userId && !event.isBirthday
-        );
-        
-        if (data.events.length !== originalLength) {
-          changesMade = true;
-        }
-      }
-      
-      // 6. CLEAN UP CHORE HISTORY
-      if (data.choreHistory) {
-        data.choreHistory = data.choreHistory.map(chore => {
-          if (chore.userId === userId) {
-            return { ...chore, userId: null }; // Keep history but unlink user
-          }
-          return chore;
-        });
-      }
-      
-      // Save cleaned data back to database
-      if (changesMade) {
-        const { error: saveError } = await supabase
-          .from('household_data')
-          .upsert({
-            key: 'app_data',
-            value: JSON.stringify(data)
-          }, {
-            onConflict: 'key'
+            return bill;
           });
+        }
         
-        if (saveError) throw saveError;
+        // 5. CLEAN UP EVENTS
+        if (data.events) {
+          const originalLength = data.events.length;
+          data.events = data.events.filter(event => 
+            event.createdBy !== userId && !event.isBirthday
+          );
+          if (data.events.length !== originalLength) changesMade = true;
+        }
+        
+        // 6. CLEAN UP CHORE HISTORY
+        if (data.choreHistory) {
+          data.choreHistory = data.choreHistory.map(chore => {
+            if (chore.userId === userId) return { ...chore, userId: null };
+            return chore;
+          });
+        }
+        
+        if (changesMade) {
+          const { error: saveError } = await supabase
+            .from('household_data')
+            .upsert({ key: 'app_data', value: JSON.stringify(data) }, { onConflict: 'key' });
+          if (saveError) throw saveError;
+        }
       }
-    }
-    
-    // ============================================
-    // DELETE THE PROFILE + AUTH ACCOUNT
-    // ============================================
-    
-    // Call our Edge Function to delete both the profile AND the Supabase Auth account.
-    // The Edge Function handles both in one go using the secret service role key.
-    const { data: deleteData, error: deleteError } = await supabase.functions.invoke('delete-user', {
-      body: { userId }
-    });
+      
+      // ============================================
+      // DELETE THE PROFILE + AUTH ACCOUNT via Edge Function
+      // ============================================
+      
+      const { data: deleteData, error: deleteError } = await supabase.functions.invoke('delete-user', {
+        body: { userId }
+      });
 
-    if (deleteError) throw deleteError;
-    if (deleteData?.error) throw new Error(deleteData.error);
-    
-    // Success!
-    alert(`✓ ${userName} deleted successfully!\n\nCleaned up:\n- Item rotations\n- Chore assignments\n- Bill splits\n- Events`);
-    
-    // Reload data
-    loadUsers();
-    if (onDataChange) {
-      onDataChange(); // Trigger app-wide reload
+      if (deleteError) throw deleteError;
+      if (deleteData?.error) throw new Error(deleteData.error);
+      
+      alert(`✓ ${userName} deleted successfully!\n\nCleaned up:\n- Item rotations\n- Chore assignments\n- Bill splits\n- Events`);
+      
+      loadUsers();
+      if (onDataChange) onDataChange();
+      
+    } catch (error) {
+      console.error('Error deleting profile:', error);
+      alert('Failed to delete profile: ' + error.message);
     }
-    
-  } catch (error) {
-    console.error('Error deleting profile:', error);
-    alert('Failed to delete profile: ' + error.message);
-  }
-};
+  };
 
   if (!isAdmin) {
     return (
@@ -535,7 +494,6 @@ const AdminSettingsUnified = ({ onDataChange }) => {
                   style={{padding: '1rem'}}
                 >
                   {editingUser === user.id ? (
-                    // EDIT MODE
                     <div className="space-y-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -581,7 +539,6 @@ const AdminSettingsUnified = ({ onDataChange }) => {
                       </div>
                     </div>
                   ) : (
-                    // VIEW MODE
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
@@ -603,20 +560,22 @@ const AdminSettingsUnified = ({ onDataChange }) => {
                         </p>
                       </div>
                       
-                      <button
-                        onClick={() => startEditUser(user)}
-                        className="bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold text-sm md:text-base whitespace-nowrap"
-                        style={{padding: '8px 16px'}}
-                      >
-                        Edit Profile
-                      </button>
-                      <button
-  onClick={() => deleteProfile(user.id)}
-  className="bg-red-500 text-white rounded hover:bg-red-600"
-  style={{padding: '6px 12px'}}
->
-  Delete
-</button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => startEditUser(user)}
+                          className="bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold text-sm md:text-base whitespace-nowrap"
+                          style={{padding: '8px 16px'}}
+                        >
+                          Edit Profile
+                        </button>
+                        <button
+                          onClick={() => deleteProfile(user.id)}
+                          className="bg-red-500 text-white rounded hover:bg-red-600 text-sm md:text-base whitespace-nowrap"
+                          style={{padding: '8px 16px'}}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
