@@ -1,4 +1,3 @@
-/* Purple icon fix */
 import React, { useState, useEffect } from 'react';
 import { Home, DollarSign, ShoppingCart, Bell, CheckCircle, Users, User, Settings, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -262,17 +261,15 @@ const validateRotation = (rotation) => {
   };
 };
   return (
-    <div className="min-h-screen flex justify-center" style={{
-      paddingBottom: '144px',
-      background: 'linear-gradient(135deg, #00CED1 0%, #20B2AA 50%, #008B8B 100%)'
-    }}>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 flex justify-center" style={{paddingBottom: '144px'}}>
       <div className="w-full max-w-6xl px-4 md:px-16 py-4 md:py-8">
         {/* ✅ FIXED: Header with overflow handling */}
-        <div className="rounded-lg shadow-lg mb-8" style={{padding: '3rem', overflow: 'hidden', background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)'}}>
+        <div className="bg-white rounded-lg shadow-lg  mb-8" style={{padding: '3rem', overflow: 'hidden'}}>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
-            <div className="text-center" style={{minWidth: 0, flex: 1}}>
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-800 flex items-center justify-center gap-2" style={{flexWrap: 'wrap'}}>
-                <span style={{wordBreak: 'break-word'}}><span className="porthole-q">Queerio House Hub</span></span>
+            <div className="text-center md:text-left" style={{minWidth: 0, flex: 1}}>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center justify-center md:justify-start gap-2" style={{flexWrap: 'wrap'}}>
+                <Home className="text-purple-600" style={{flexShrink: 0}} />
+                <span style={{wordBreak: 'break-word'}}>Queerio House Hub</span>
               </h1>
               <p className="text-gray-600 text-sm md:text-base" style={{wordBreak: 'break-word'}}>
   {householdMembers.length > 0 
@@ -285,7 +282,7 @@ const validateRotation = (rotation) => {
                 <p className="font-semibold text-sm" style={{wordBreak: 'break-word'}}>{profile?.name}</p>
                 {isAdmin && (
                   <span 
-                    className="text-xs bg-cyan-100 text-cyan-700 rounded"
+                    className="text-xs bg-purple-100 text-purple-700 rounded"
                     style={{
                       padding: '2px 12px',
                       whiteSpace: 'nowrap',
@@ -355,7 +352,7 @@ const validateRotation = (rotation) => {
                 key={tab.id} 
                 onClick={() => setActiveTab(tab.id)} 
                 className={`flex flex-col items-center justify-center rounded-lg ${
-                  activeTab === tab.id ? 'text-cyan-600 bg-cyan-50' : 'text-gray-600'
+                  activeTab === tab.id ? 'text-purple-600 bg-purple-50' : 'text-gray-600'
                 }`}
                 style={{
                   padding: '8px 16px',
@@ -1253,7 +1250,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
           {isAdmin && (
             <button 
               onClick={() => setShow(true)} 
-              className="bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 text-sm md:text-base whitespace-nowrap flex-shrink-0"
+              className="bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm md:text-base whitespace-nowrap flex-shrink-0"
               style={{padding: '8px 16px'}}
             >
               + Add Bill
@@ -1272,7 +1269,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                 type="date"
                 value={dateFilterFrom}
                 onChange={(e) => setDateFilterFrom(e.target.value)}
-                className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 text-sm md:text-base"
+                className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
                 style={{padding: '10px'}}
               />
             </div>
@@ -1282,7 +1279,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                 type="date"
                 value={dateFilterTo}
                 onChange={(e) => setDateFilterTo(e.target.value)}
-                className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 text-sm md:text-base"
+                className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
                 style={{padding: '10px'}}
               />
             </div>
@@ -1306,7 +1303,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
       )}
 
       {show && isAdmin && (
-        <div className="mb-6 p-4 md:p-6 bg-cyan-50 rounded-lg">
+        <div className="mb-6 p-4 md:p-6 bg-purple-50 rounded-lg">
           <select value={cat} onChange={(e) => setCat(e.target.value)} className="w-full p-3 border rounded mb-3 text-sm md:text-base">
             <option value="">Select category...</option>
             {['Rent', 'Internet', 'PG&E', 'Waste Management', 'Water', 'Other'].map(c => <option key={c} value={c}>{c}</option>)}
@@ -1346,21 +1343,21 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
             </select>
           )}
 
-          <div className="mt-4 p-4 bg-white rounded-lg border-2 border-cyan-200">
+          <div className="mt-4 p-4 bg-white rounded-lg border-2 border-purple-200">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-semibold text-sm md:text-base">Split Between Roommates:</h3>
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => setSplitMode('percent')}
-                  className={`px-3 py-1 text-xs md:text-sm rounded whitespace-nowrap min-w-[50px] ${splitMode === 'percent' ? 'bg-cyan-600 text-white' : 'bg-gray-200'}`}
+                  className={`px-3 py-1 text-xs md:text-sm rounded whitespace-nowrap min-w-[50px] ${splitMode === 'percent' ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}
                 >
                   By %
                 </button>
                 <button
                   type="button"
                   onClick={() => setSplitMode('amount')}
-                  className={`px-3 py-1 text-xs md:text-sm rounded whitespace-nowrap min-w-[50px] ${splitMode === 'amount' ? 'bg-cyan-600 text-white' : 'bg-gray-200'}`}
+                  className={`px-3 py-1 text-xs md:text-sm rounded whitespace-nowrap min-w-[50px] ${splitMode === 'amount' ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}
                 >
                   By $
                 </button>
@@ -1443,7 +1440,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
           </div>
 
           <div className="flex gap-2 mt-4">
-            <button onClick={add} className="flex-1 bg-cyan-600 text-white px-5 py-3 rounded hover:bg-cyan-700 text-sm md:text-base whitespace-nowrap min-w-[100px]">Add Bill</button>
+            <button onClick={add} className="flex-1 bg-purple-600 text-white px-5 py-3 rounded hover:bg-purple-700 text-sm md:text-base whitespace-nowrap min-w-[100px]">Add Bill</button>
             <button onClick={() => { 
               setShow(false); 
               setCat(''); 
@@ -1460,7 +1457,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
       {showCreditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{padding: '1rem'}}>
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" style={{padding: '2rem'}}>
-            <h2 className="text-2xl font-bold text-cyan-600 mb-4">Credit Management</h2>
+            <h2 className="text-2xl font-bold text-purple-600 mb-4">Credit Management</h2>
             
             <p className="text-gray-700 mb-6">
               The following users have overpaid due to your changes. Please decide how to handle each credit:
@@ -1468,7 +1465,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
             
             <div className="space-y-6">
               {pendingCredits.map(credit => (
-                <div key={credit.userId} className="border-2 border-cyan-200 rounded-lg" style={{padding: '1.5rem', overflow: 'hidden'}}>
+                <div key={credit.userId} className="border-2 border-purple-200 rounded-lg" style={{padding: '1.5rem', overflow: 'hidden'}}>
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="font-bold text-lg">{credit.userName}</h3>
@@ -1481,7 +1478,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">What would you like to do?</label>
                       <div className="space-y-2">
-                        <label className="flex items-center gap-3 p-3 border-2 rounded cursor-pointer hover:bg-cyan-50" style={{
+                        <label className="flex items-center gap-3 p-3 border-2 rounded cursor-pointer hover:bg-purple-50" style={{
                           borderColor: creditDecisions[credit.userId]?.action === 'credit' ? '#9333ea' : '#e5e7eb',
                           backgroundColor: creditDecisions[credit.userId]?.action === 'credit' ? '#faf5ff' : 'white'
                         }}>
@@ -1501,7 +1498,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                           </div>
                         </label>
                         
-                        <label className="flex items-center gap-3 p-3 border-2 rounded cursor-pointer hover:bg-cyan-50" style={{
+                        <label className="flex items-center gap-3 p-3 border-2 rounded cursor-pointer hover:bg-purple-50" style={{
                           borderColor: creditDecisions[credit.userId]?.action === 'refund' ? '#9333ea' : '#e5e7eb',
                           backgroundColor: creditDecisions[credit.userId]?.action === 'refund' ? '#faf5ff' : 'white'
                         }}>
@@ -1533,7 +1530,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                             ...creditDecisions,
                             [credit.userId]: { ...creditDecisions[credit.userId], applyTo: e.target.value }
                           })}
-                          className="w-full border-2 border-cyan-200 rounded-lg focus:ring-2 focus:ring-cyan-500"
+                          className="w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500"
                           style={{padding: '14px'}}
                         >
                           <option value="account">General Account Credit</option>
@@ -1553,7 +1550,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={applyCreditDecisions}
-                className="flex-1 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 font-semibold"
+                className="flex-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold"
                 style={{padding: '14px'}}
               >
                 Apply Decisions & Save Bill
@@ -1577,10 +1574,10 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
 
       {/* User Payment Tracking - Inline Section */}
       {showPaymentModal && paymentModalData && (
-        <div className="mb-6 bg-white rounded-lg shadow-lg border-2 border-cyan-300" style={{padding: '2rem'}}>
+        <div className="mb-6 bg-white rounded-lg shadow-lg border-2 border-purple-300" style={{padding: '2rem'}}>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
             <div>
-              <h2 className="text-xl md:text-2xl font-bold text-cyan-600">Payment Tracker</h2>
+              <h2 className="text-xl md:text-2xl font-bold text-purple-600">Payment Tracker</h2>
               <h3 className="text-base md:text-lg text-gray-700">{paymentModalData.billName}</h3>
             </div>
             <button
@@ -1596,11 +1593,11 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
             </button>
           </div>
             {/* Amount Summary */}
-            <div className="bg-cyan-50 border-2 border-cyan-200 rounded-lg mb-6" style={{padding: '1.5rem'}}>
+            <div className="bg-purple-50 border-2 border-purple-200 rounded-lg mb-6" style={{padding: '1.5rem'}}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs md:text-sm text-gray-600">Amount You Owe:</p>
-                  <p className="text-xl md:text-2xl font-bold text-cyan-600">${paymentModalData.amountOwed.toFixed(2)}</p>
+                  <p className="text-xl md:text-2xl font-bold text-purple-600">${paymentModalData.amountOwed.toFixed(2)}</p>
                 </div>
                 <div>
                   <p className="text-xs md:text-sm text-gray-600">Total Paid So Far:</p>
@@ -1609,7 +1606,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                   </p>
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-cyan-300">
+              <div className="mt-3 pt-3 border-t border-purple-300">
                 <p className="text-xs md:text-sm text-gray-600">Remaining Balance:</p>
                 <p className={`text-lg md:text-xl font-bold ${
                   paymentModalData.amountOwed - paymentModalData.currentPayments.reduce((sum, p) => sum + p.amount, 0) <= 0.01 
@@ -1632,7 +1629,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                       <input
                         type="number"
                         id="payment-amount"
-                        className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 text-sm md:text-base"
+                        className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
                         style={{padding: '10px'}}
                         step="0.01"
                         min="0"
@@ -1645,7 +1642,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                         type="date"
                         id="payment-date"
                         max={new Date().toISOString().split('T')[0]}
-                        className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 text-sm md:text-base"
+                        className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
                         style={{padding: '10px'}}
                         defaultValue={new Date().toISOString().split('T')[0]}
                       />
@@ -1656,7 +1653,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                     <input
                       type="text"
                       id="payment-note"
-                      className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 text-sm md:text-base"
+                      className="w-full border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
                       style={{padding: '10px'}}
                       placeholder="e.g., Venmo, Cash, Check #123"
                     />
@@ -1852,7 +1849,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                   {editingBill === b.id ? (
                     // EDIT MODE
                     <div className="space-y-4">
-                      <h3 className="font-bold text-lg text-cyan-600 mb-4">Edit Bill</h3>
+                      <h3 className="font-bold text-lg text-purple-600 mb-4">Edit Bill</h3>
                       
                       {/* Show existing payments warning */}
                       {b.payments && Object.values(b.payments).some(p => p.paid) && (
@@ -1885,7 +1882,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                           type="text"
                           value={editCat}
                           onChange={(e) => setEditCat(e.target.value)}
-                          className="w-full border-2 border-cyan-200 rounded-lg focus:ring-2 focus:ring-cyan-500"
+                          className="w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500"
                           style={{padding: '14px'}}
                         />
                       </div>
@@ -1897,7 +1894,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                           type="number"
                           value={editAmt}
                           onChange={(e) => setEditAmt(e.target.value)}
-                          className="w-full border-2 border-cyan-200 rounded-lg focus:ring-2 focus:ring-cyan-500"
+                          className="w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500"
                           style={{padding: '14px'}}
                           step="0.01"
                           min="0"
@@ -1911,7 +1908,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                           type="date"
                           value={editDue}
                           onChange={(e) => setEditDue(e.target.value)}
-                          className="w-full border-2 border-cyan-200 rounded-lg focus:ring-2 focus:ring-cyan-500"
+                          className="w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500"
                           style={{padding: '14px'}}
                         />
                       </div>
@@ -1930,7 +1927,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                           <select
                             value={editRecurrenceType}
                             onChange={(e) => setEditRecurrenceType(e.target.value)}
-                            className="mt-2 w-full border-2 border-cyan-200 rounded-lg focus:ring-2 focus:ring-cyan-500"
+                            className="mt-2 w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500"
                             style={{padding: '14px'}}
                           >
                             <option value="weekly">Weekly</option>
@@ -1946,7 +1943,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                         <select
                           value={editSplitMode}
                           onChange={(e) => setEditSplitMode(e.target.value)}
-                          className="w-full border-2 border-cyan-200 rounded-lg focus:ring-2 focus:ring-cyan-500"
+                          className="w-full border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500"
                           style={{padding: '14px'}}
                         >
                           <option value="percent">Percentage Split</option>
@@ -1990,7 +1987,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                                   value={currentValue}
                                   onChange={(e) => setEditSplits({ ...editSplits, [user.id]: e.target.value })}
                                   disabled={!isIncluded}
-                                  className="flex-1 border-2 border-cyan-200 rounded-lg focus:ring-2 focus:ring-cyan-500 disabled:bg-gray-100 disabled:text-gray-400"
+                                  className="flex-1 border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100 disabled:text-gray-400"
                                   style={{padding: '8px'}}
                                   placeholder="0"
                                   step="0.01"
@@ -2015,7 +2012,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                       <div className="flex gap-2 pt-2">
                         <button
                           onClick={updateBill}
-                          className="flex-1 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 font-semibold"
+                          className="flex-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold"
                           style={{padding: '12px'}}
                         >
                           Save Changes
@@ -2044,7 +2041,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                       <p className="text-xs md:text-sm text-gray-600 mt-1">Due: {new Date(b.dueDate + 'T00:00:00').toLocaleDateString()}</p>
                     </div>
                     <div className="text-right w-full md:w-auto" style={{flexShrink: 0}}>
-                      <p className="text-lg md:text-xl font-bold text-cyan-600 mb-2">${b.amount.toFixed(2)}</p>
+                      <p className="text-lg md:text-xl font-bold text-purple-600 mb-2">${b.amount.toFixed(2)}</p>
                       {isAdmin && !b.paid && (
                         <div className="flex gap-2 justify-end">
                           <button 
@@ -2130,7 +2127,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                                         +${overpaymentAmount.toFixed(2)} credit
                                       </span>
                                       {userPayment.creditAction && (
-                                        <span className="text-xs text-cyan-600 ml-2">
+                                        <span className="text-xs text-purple-600 ml-2">
                                           ({userPayment.creditAction === 'refund' ? 'Refund issued' : `📝 Applied to ${userPayment.creditAppliedTo}`})
                                         </span>
                                       )}
@@ -2165,7 +2162,7 @@ const Bills = ({ bills, setBills, saveData, addActivity }) => {
                                       {(userPayment.paymentHistory && userPayment.paymentHistory.length > 0) && (
                                         <button
                                           onClick={() => openPaymentModal(b.id, userId, b, 'view')}
-                                          className="bg-cyan-600 text-white text-xs md:text-sm rounded hover:bg-cyan-700 whitespace-nowrap"
+                                          className="bg-purple-600 text-white text-xs md:text-sm rounded hover:bg-purple-700 whitespace-nowrap"
                                           style={{padding: '8px 16px'}}
                                         >
                                           📊 Check Payments
@@ -2372,7 +2369,7 @@ const adminMarkPurchase = (itemId, userId) => {
         <h2 className="text-xl md:text-2xl font-bold mb-4">Mark Item as Purchased</h2>
         
         <p className="text-center mb-2 text-sm md:text-base">
-          Who purchased <span className="font-bold text-cyan-600">{selectedItem.name}</span>?
+          Who purchased <span className="font-bold text-purple-600">{selectedItem.name}</span>?
         </p>
         
         {isAdmin && (
@@ -2532,7 +2529,7 @@ const adminMarkPurchase = (itemId, userId) => {
                                 <div 
                                   className={`rounded text-xs md:text-sm ${
                                     isCurrent 
-                                      ? `${colors[userId] || colors[displayName] || 'bg-gray-200 text-gray-800'} font-bold border-2 border-cyan-500`
+                                      ? `${colors[userId] || colors[displayName] || 'bg-gray-200 text-gray-800'} font-bold border-2 border-purple-500`
                                       : isSkipped
                                       ? 'bg-gray-300 text-gray-500 line-through'
                                       : colors[userId] || colors[displayName] || 'bg-gray-200 text-gray-800'
@@ -2605,7 +2602,7 @@ const adminMarkPurchase = (itemId, userId) => {
                         <>
                           <button 
                             onClick={() => setSelectedItem(item)} 
-                            className="bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 whitespace-nowrap text-sm md:text-base min-w-[160px] font-medium"
+                            className="bg-purple-500 text-white rounded-lg hover:bg-purple-600 whitespace-nowrap text-sm md:text-base min-w-[160px] font-medium"
                             style={{padding: '12px 20px'}}
                           >
                             Mark Purchased
@@ -2843,7 +2840,7 @@ const getAvailableChoresFor = (userId) => {
       <div className="bg-white rounded-lg shadow-lg" style={{padding: '3rem', overflow: 'hidden'}}>
         <h2 className="text-xl md:text-2xl font-bold mb-4">Complete Chore</h2>
         <p className="text-center mb-6 text-sm md:text-base">
-          Mark <span className="font-bold text-cyan-600">{selectedItem.name}</span> as complete?
+          Mark <span className="font-bold text-purple-600">{selectedItem.name}</span> as complete?
         </p>
         <div className="flex gap-2 justify-center">
           <button 
@@ -2927,7 +2924,7 @@ const getAvailableChoresFor = (userId) => {
     {isAdmin && (
   <button
     onClick={() => setShowChoreManager(!showChoreManager)}
-    className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 text-sm md:text-base whitespace-nowrap min-w-[140px]"
+    className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm md:text-base whitespace-nowrap min-w-[140px]"
   >
     Manage Chores
   </button>
@@ -2954,8 +2951,8 @@ const getAvailableChoresFor = (userId) => {
 
 {/* CHORE MANAGER PANEL - ADD RIGHT AFTER THE ABOVE DIV */}
 {showChoreManager && isAdmin && (
-  <div className="mb-6 bg-cyan-50 border-2 border-cyan-300 rounded-lg" style={{padding: '1.5rem'}}>
-    <h3 className="text-lg font-bold text-cyan-700 mb-4">Chore Manager</h3>
+  <div className="mb-6 bg-purple-50 border-2 border-purple-300 rounded-lg" style={{padding: '1.5rem'}}>
+    <h3 className="text-lg font-bold text-purple-700 mb-4">Chore Manager</h3>
     
     {/* Add New Chore */}
     <div className="mb-4 bg-white rounded-lg border-2 border-gray-200" style={{padding: '1rem'}}>
@@ -2966,7 +2963,7 @@ const getAvailableChoresFor = (userId) => {
           value={newChoreName}
           onChange={(e) => setNewChoreName(e.target.value)}
           placeholder="e.g., Vacuum Bedrooms"
-          className="flex-1 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 text-sm md:text-base"
+          className="flex-1 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm md:text-base"
           style={{padding: '10px'}}
         />
         <button
@@ -3041,8 +3038,8 @@ const getAvailableChoresFor = (userId) => {
 
 {/* CHORE MANAGER - ADD THIS ENTIRE SECTION */}
 {showChoreManager && isAdmin && (
-  <div className="mb-6 bg-cyan-50 border-2 border-cyan-300 rounded-lg" style={{padding: '1.5rem'}}>
-    <h3 className="text-lg font-bold text-cyan-700 mb-4">Chore Manager</h3>
+  <div className="mb-6 bg-purple-50 border-2 border-purple-300 rounded-lg" style={{padding: '1.5rem'}}>
+    <h3 className="text-lg font-bold text-purple-700 mb-4">Chore Manager</h3>
     
     {/* Add New Chore */}
     <div className="mb-4 bg-white rounded-lg border-2 border-gray-200" style={{padding: '1rem'}}>
@@ -3053,7 +3050,7 @@ const getAvailableChoresFor = (userId) => {
           value={newChoreName}
           onChange={(e) => setNewChoreName(e.target.value)}
           placeholder="e.g., Vacuum Bedrooms"
-          className="flex-1 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500"
+          className="flex-1 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
           style={{padding: '10px'}}
         />
         <button
@@ -3173,7 +3170,7 @@ const getAvailableChoresFor = (userId) => {
       </select>
       <button 
         onClick={() => spinWheelForPerson(userId)} 
-        className="px-4 py-2 bg-cyan-500 text-white text-xs md:text-sm rounded hover:bg-cyan-600 whitespace-nowrap min-w-[60px]"
+        className="px-4 py-2 bg-purple-500 text-white text-xs md:text-sm rounded hover:bg-purple-600 whitespace-nowrap min-w-[60px]"
       >
         Spin
       </button>
@@ -3212,14 +3209,14 @@ const getAvailableChoresFor = (userId) => {
           <h2 className="text-xl md:text-2xl font-bold">One-Time Tasks</h2>
           <button 
             onClick={() => setShowForm('task')} 
-            className="px-5 py-2 bg-cyan-600 text-white rounded-lg text-sm md:text-base whitespace-nowrap min-w-[100px]"
+            className="px-5 py-2 bg-purple-600 text-white rounded-lg text-sm md:text-base whitespace-nowrap min-w-[100px]"
           >
             + Add Task
           </button>
         </div>
 
         {showForm === 'task' && (
-          <div className="mb-4 p-4 bg-cyan-50 rounded-lg">
+          <div className="mb-4 p-4 bg-purple-50 rounded-lg">
             <input 
               type="text" 
               value={title} 
@@ -3244,7 +3241,7 @@ const getAvailableChoresFor = (userId) => {
             <div className="flex gap-2">
               <button 
                 onClick={addTask} 
-                className="flex-1 bg-cyan-600 text-white px-5 py-2 rounded text-sm md:text-base whitespace-nowrap min-w-[70px]"
+                className="flex-1 bg-purple-600 text-white px-5 py-2 rounded text-sm md:text-base whitespace-nowrap min-w-[70px]"
               >
                 Add
               </button>
@@ -3469,12 +3466,12 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
       <div className="bg-white rounded-lg shadow-lg" style={{padding: '3rem', overflow: 'hidden'}}>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl md:text-2xl font-bold flex items-center gap-2">
-            <CalendarIcon className="text-cyan-600" />
+            <CalendarIcon className="text-purple-600" />
             Events Calendar
           </h2>
           <button 
             onClick={() => setShowForm('event')} 
-            className="bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 text-sm md:text-base whitespace-nowrap flex-shrink-0 font-medium"
+            className="bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm md:text-base whitespace-nowrap flex-shrink-0 font-medium"
             style={{padding: '12px 24px'}}
           >
             + Add Event
@@ -3483,7 +3480,7 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
 
         {/* Add Event Form */}
         {showForm === 'event' && (
-          <div className="mb-6 p-4 bg-cyan-50 rounded-lg border-2 border-cyan-200">
+          <div className="mb-6 p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
             <h3 className="font-semibold mb-3">Create New Event</h3>
             <input 
               type="text" 
@@ -3521,7 +3518,7 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
             <div className="flex gap-2">
               <button 
                 onClick={add} 
-                className="flex-1 bg-cyan-600 text-white px-5 py-2 rounded hover:bg-cyan-700 text-sm md:text-base"
+                className="flex-1 bg-purple-600 text-white px-5 py-2 rounded hover:bg-purple-700 text-sm md:text-base"
               >
                 Add Event
               </button>
@@ -3551,7 +3548,7 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
             </h3>
             <button
               onClick={goToToday}
-              className="text-sm text-cyan-600 hover:underline"
+              className="text-sm text-purple-600 hover:underline"
             >
               Go to Today
             </button>
@@ -3569,7 +3566,7 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
         {/* Calendar Grid */}
         <div className="border-2 border-gray-200 rounded-lg overflow-hidden">
           {/* Day headers */}
-          <div className="grid grid-cols-7 bg-cyan-50 border-b-2 border-gray-200">
+          <div className="grid grid-cols-7 bg-purple-50 border-b-2 border-gray-200">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
               <div key={day} className="p-2 text-center font-semibold text-sm">
                 {day}
@@ -3608,7 +3605,7 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
                               className={`text-xs truncate rounded px-1 ${
                                 event.isBirthday 
                                   ? 'bg-pink-200 text-pink-800' 
-                                  : 'bg-cyan-200 text-cyan-800'
+                                  : 'bg-purple-200 text-purple-800'
                               }`}
                               title={event.title}
                             >
@@ -3663,7 +3660,7 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
                         {e.time && ` at ${e.time}`}
                       </p>
                       
-                      <p className="text-xs text-cyan-600">
+                      <p className="text-xs text-purple-600">
                         {e.isBirthday ? 'Birthday Event' : `Created by: ${e.createdByName || 'Unknown'}`}
                       </p>
                       
@@ -3795,7 +3792,7 @@ const Activity = ({ activity }) => {
       ) : (
         <div className="space-y-2">
           {filteredActivity.map(a => (
-            <div key={a.id} className="bg-cyan-50 rounded-lg border-l-4 border-cyan-500" style={{padding: '1rem', overflow: 'hidden'}}>
+            <div key={a.id} className="bg-purple-50 rounded-lg border-l-4 border-purple-500" style={{padding: '1rem', overflow: 'hidden'}}>
               <p className="font-medium text-sm md:text-base" style={{wordBreak: 'break-word'}}>{a.msg}</p>
               <p className="text-xs md:text-sm text-gray-500">
                 {new Date(a.time).toLocaleString()}
@@ -3809,18 +3806,39 @@ const Activity = ({ activity }) => {
 };
 
 const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-cyan-50 to-pink-100 flex items-center justify-center">
-        <div className="text-xl md:text-2xl font-bold text-cyan-600">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 flex items-center justify-center">
+        <div className="text-xl md:text-2xl font-bold text-purple-600">Loading...</div>
       </div>
     );
   }
   
   if (!user) {
     return <Navigate to="/login" />;
+  }
+
+  // If user is logged in but has no profile yet, show a message instead of crashing.
+  // This can happen if the signup process didn't complete fully.
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 flex items-center justify-center px-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md text-center">
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Setting up your account...</h2>
+          <p className="text-gray-600 text-sm mb-4">
+            Your profile is still being created. Please wait a moment and refresh the page.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700"
+          >
+            Refresh
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return children;
