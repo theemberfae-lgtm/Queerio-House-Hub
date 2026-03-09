@@ -91,8 +91,13 @@ const AdminSettingsUnified = ({ onDataChange }) => {
       .eq('id', id);
     
     if (!error) {
-      loadInvites();
+      // Remove the deleted invite directly from state so the UI updates instantly,
+      // then also reload from the database to make sure everything is in sync.
+      setInvites(prev => prev.filter(invite => invite.id !== id));
       setMessage('Invite deleted');
+      loadInvites();
+    } else {
+      setMessage('Error deleting invite: ' + error.message);
     }
   };
 
