@@ -280,7 +280,7 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
               >
                 <p className="font-semibold" style={{wordBreak: 'break-word'}}>{event.title}</p>
                 <p className="text-sm text-gray-600" style={{wordBreak: 'break-word'}}>
-                  {new Date(event.date).toLocaleDateString()}
+                  {new Date(event.date + 'T00:00:00').toLocaleDateString()}
                   {event.time && ` at ${event.time}`}
                 </p>
               </div>
