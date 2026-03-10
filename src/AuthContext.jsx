@@ -162,13 +162,9 @@ export const AuthProvider = ({ children }) => {
     if (!user) return;
     
     const { error } = await supabase
-  .from('profiles')
-  .update({
-    name: editForm.name,
-    is_admin: editForm.is_admin,
-    role: editForm.is_admin ? 'admin' : 'user'  // ADD THIS LINE
-  })
-  .eq('id', userId);
+      .from('profiles')
+      .update(updates)
+      .eq('id', user.id);
 
     if (error) throw error;
     

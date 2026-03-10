@@ -139,12 +139,13 @@ const AdminSettingsUnified = ({ onDataChange }) => {
   const saveUserEdit = async (userId) => {
     try {
       const { error } = await supabase
-        .from('profiles')
-        .update({
-          name: editForm.name,
-          is_admin: editForm.is_admin
-        })
-        .eq('id', userId);
+  .from('profiles')
+  .update({
+    name: editForm.name,
+    is_admin: editForm.is_admin,
+    role: editForm.is_admin ? 'admin' : 'user'  // ADD THIS LINE
+  })
+  .eq('id', userId);
 
       if (error) throw error;
 
