@@ -3332,6 +3332,19 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
     return `${hour}:${minute} ${period}`;
   };
   
+  // Edit event state — tracks which event is open for editing
+  const [editingEvent, setEditingEvent] = useState(null); // the id of the event being edited
+  const [editTitle, setEditTitle] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editTime, setEditTime] = useState('');
+  const [editEndTime, setEditEndTime] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editLink, setEditLink] = useState('');
+
+  // Delete confirmation — holds the id of the event waiting for confirmation.
+  // Instead of a browser popup, we show an inline red warning card (consistent with app style).
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
   // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
@@ -3422,6 +3435,44 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
     setCurrentMonth(new Date());
   };
 
+  // -----------------------------------------------
+  // EDIT HELPERS
+  // startEdit: copies an event's current data into
+  // the edit form fields so the user can change them.
+  // -----------------------------------------------
+  const startEdit = (event) => {
+    setEditingEvent(event.id);
+    setEditTitle(event.title);
+    setEditDate(event.date);
+    setEditTime(event.time || '');
+    setEditEndTime(event.endTime || '');
+    setEditDesc(event.description || '');
+    setEditLink(event.link || '');
+  };
+
+  const cancelEdit = () => {
+    setEditingEvent(null);
+    setEditTitle(''); setEditDate(''); setEditTime('');
+    setEditEndTime(''); setEditDesc(''); setEditLink('');
+  };
+
+  // saveEdit: finds the event in the array by id and replaces it with updated values
+  const saveEdit = () => {
+    if (!editTitle || !editDate) {
+      alert('Please enter event title and date');
+      return;
+    }
+    const updated = events.map(e =>
+      e.id === editingEvent
+        ? { ...e, title: editTitle, date: editDate, time: editTime, endTime: editEndTime, description: editDesc, link: editLink }
+        : e
+    );
+    setEvents(updated);
+    saveData({ events: updated });
+    addActivity(`${profile.name} updated event: ${editTitle}`);
+    cancelEdit();
+  };
+
   // Add event
   const add = () => {
     if (!title || !date) {
@@ -3456,7 +3507,7 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
     setShowForm(null);
   };
 
-  // Delete event
+  // Delete event — only called AFTER the user confirms via the inline red warning card
   const del = (id, eventCreatorId, isBirthday) => {
     if (isBirthday) {
       alert('Birthday events cannot be deleted. Change your birthday in your profile to update it.');
@@ -3474,6 +3525,7 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
     setEvents(updated);
     saveData({ events: updated });
     addActivity(`${profile.name} deleted an event`);
+    setConfirmDeleteId(null); // Clear the inline warning card
   };
 
   // Filter upcoming events
@@ -3674,75 +3726,183 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
         ) : (
           <div className="space-y-3">
             {upcomingEvents.map(e => {
+              const canEdit = isAdmin || e.createdBy === profile.id;
               const canDelete = isAdmin || e.createdBy === profile.id;
               
               return (
                 <div 
                   key={e.id} 
                   className={`rounded-lg border-2 ${
-                    e.isBirthday 
-                      ? 'bg-pink-50 border-pink-200' 
-                      : 'bg-gray-50 border-gray-200'
+                    confirmDeleteId === e.id
+                      ? 'bg-red-50 border-red-300'           // Red warning when delete is pending
+                      : e.isBirthday 
+                        ? 'bg-pink-50 border-pink-200' 
+                        : 'bg-gray-50 border-gray-200'
                   }`}
                   style={{padding: '1rem', overflow: 'hidden'}}
                 >
-                  <div className="flex flex-col md:flex-row justify-between gap-4">
-                    <div className="flex-1" style={{minWidth: 0}}>
-                      <h3 className="font-bold text-sm md:text-base mb-1" style={{wordBreak: 'break-word'}}>
-                        {e.title}
-                      </h3>
-                      
-                      <p className="text-xs md:text-sm text-gray-600 mb-1">
-                        {formatDate(e.date)}
-                        {e.time && ` at ${formatTime(e.time)}`}
-                        {e.time && e.endTime && ` – ${formatTime(e.endTime)}`}
-                      </p>
-                      
-                      <p className="text-xs text-purple-600">
-                        {e.isBirthday ? 'Birthday Event' : `Created by: ${e.createdByName || 'Unknown'}`}
-                      </p>
-                      
-                      {e.description && (
-                        <p className="text-xs md:text-sm mt-2" style={{wordBreak: 'break-word'}}>
-                          {e.description}
-                        </p>
-                      )}
-                      
-                      {e.link && (
-                        <a 
-                          href={e.link} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="text-xs md:text-sm text-blue-600 underline"
-                          style={{wordBreak: 'break-all'}}
+                  {/* ── INLINE EDIT FORM ─────────────────────── */}
+                  {/* Shows in place of the normal card when Edit is clicked */}
+                  {editingEvent === e.id ? (
+                    <div>
+                      <h4 className="font-bold text-sm mb-3 text-purple-700">✏️ Editing Event</h4>
+                      <input
+                        type="text"
+                        value={editTitle}
+                        onChange={(ev) => setEditTitle(ev.target.value)}
+                        placeholder="Event title"
+                        className="w-full p-2 border rounded mb-2 text-sm"
+                      />
+                      <input
+                        type="date"
+                        value={editDate}
+                        onChange={(ev) => setEditDate(ev.target.value)}
+                        className="w-full p-2 border rounded mb-2 text-sm"
+                      />
+                      <label className="block text-xs text-gray-500 mb-1">Start time (optional)</label>
+                      <input
+                        type="time"
+                        value={editTime}
+                        onChange={(ev) => setEditTime(ev.target.value)}
+                        className="w-full p-2 border rounded mb-2 text-sm"
+                      />
+                      <label className="block text-xs text-gray-500 mb-1">End time (optional)</label>
+                      <input
+                        type="time"
+                        value={editEndTime}
+                        onChange={(ev) => setEditEndTime(ev.target.value)}
+                        className="w-full p-2 border rounded mb-3 text-sm"
+                      />
+                      <textarea
+                        value={editDesc}
+                        onChange={(ev) => setEditDesc(ev.target.value)}
+                        placeholder="Description (optional)"
+                        className="w-full p-2 border rounded mb-2 text-sm"
+                        rows="2"
+                      />
+                      <input
+                        type="url"
+                        value={editLink}
+                        onChange={(ev) => setEditLink(ev.target.value)}
+                        placeholder="Link (optional)"
+                        className="w-full p-2 border rounded mb-3 text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={saveEdit}
+                          className="flex-1 bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 text-sm font-semibold"
                         >
-                          Link
-                        </a>
-                      )}
+                          Save Changes
+                        </button>
+                        <button
+                          onClick={cancelEdit}
+                          className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 text-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
-                    
-                    {!e.isBirthday && canDelete && (
-                      <button 
-                        onClick={() => del(e.id, e.createdBy, e.isBirthday)} 
-                        className="text-red-500 text-sm md:text-base self-start md:self-center px-3 py-1 hover:bg-red-50 rounded whitespace-nowrap"
-                        style={{flexShrink: 0}}
-                      >
-                        Delete
-                      </button>
-                    )}
-                    
-                    {!e.isBirthday && !canDelete && (
-                      <div className="text-gray-400 text-xs self-start md:self-center px-3 py-1">
-                        🔒
+
+                  /* ── INLINE DELETE WARNING ───────────────────── */
+                  /* Shows a red confirmation panel before actually deleting */
+                  ) : confirmDeleteId === e.id ? (
+                    <div>
+                      <div className="flex items-start gap-2 mb-3">
+                        <span className="text-red-500 text-lg" style={{flexShrink: 0}}>⚠️</span>
+                        <div>
+                          <p className="font-bold text-red-700 text-sm">Delete this event?</p>
+                          <p className="text-red-600 text-xs mt-1">
+                            "<span className="font-semibold">{e.title}</span>" will be permanently removed. This cannot be undone.
+                          </p>
+                        </div>
                       </div>
-                    )}
-                    
-                    {e.isBirthday && (
-                      <div className="text-pink-600 text-xs self-start md:self-center px-3 py-1">
-                        ℹ️ Auto-generated
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => del(e.id, e.createdBy, e.isBirthday)}
+                          className="flex-1 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-sm font-semibold"
+                        >
+                          Yes, Delete
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteId(null)}
+                          className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 text-sm"
+                        >
+                          Cancel
+                        </button>
                       </div>
-                    )}
-                  </div>
+                    </div>
+
+                  /* ── NORMAL CARD VIEW ────────────────────────── */
+                  ) : (
+                    <div className="flex flex-col md:flex-row justify-between gap-4">
+                      <div className="flex-1" style={{minWidth: 0}}>
+                        <h3 className="font-bold text-sm md:text-base mb-1" style={{wordBreak: 'break-word'}}>
+                          {e.title}
+                        </h3>
+                        
+                        <p className="text-xs md:text-sm text-gray-600 mb-1">
+                          {formatDate(e.date)}
+                          {e.time && ` at ${formatTime(e.time)}`}
+                          {e.time && e.endTime && ` – ${formatTime(e.endTime)}`}
+                        </p>
+                        
+                        <p className="text-xs text-purple-600">
+                          {e.isBirthday ? 'Birthday Event' : `Created by: ${e.createdByName || 'Unknown'}`}
+                        </p>
+                        
+                        {e.description && (
+                          <p className="text-xs md:text-sm mt-2" style={{wordBreak: 'break-word'}}>
+                            {e.description}
+                          </p>
+                        )}
+                        
+                        {e.link && (
+                          <a 
+                            href={e.link} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-xs md:text-sm text-blue-600 underline"
+                            style={{wordBreak: 'break-all'}}
+                          >
+                            Link
+                          </a>
+                        )}
+                      </div>
+                      
+                      {/* Action buttons — only shown for creator + admins, never for birthdays */}
+                      <div className="flex gap-2 self-start md:self-center" style={{flexShrink: 0}}>
+                        {!e.isBirthday && canEdit && (
+                          <button 
+                            onClick={() => startEdit(e)} 
+                            className="text-purple-600 text-sm px-3 py-1 hover:bg-purple-50 rounded border border-purple-200 whitespace-nowrap"
+                          >
+                            Edit
+                          </button>
+                        )}
+                        
+                        {!e.isBirthday && canDelete && (
+                          <button 
+                            onClick={() => setConfirmDeleteId(e.id)} 
+                            className="text-red-500 text-sm px-3 py-1 hover:bg-red-50 rounded whitespace-nowrap"
+                          >
+                            Delete
+                          </button>
+                        )}
+                        
+                        {!e.isBirthday && !canDelete && (
+                          <div className="text-gray-400 text-xs self-start md:self-center px-3 py-1">
+                            🔒
+                          </div>
+                        )}
+                        
+                        {e.isBirthday && (
+                          <div className="text-pink-600 text-xs self-start md:self-center px-3 py-1">
+                            ℹ️ Auto-generated
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
