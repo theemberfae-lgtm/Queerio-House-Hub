@@ -3310,7 +3310,8 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
-  const [endTime, setEndTime] = useState(''); // Optional: when the event ends
+  const [endTime, setEndTime] = useState('');   // Optional: what time the event ends
+  const [endDate, setEndDate] = useState('');   // Optional: end date if different from start (overnight/multi-day)
   const [desc, setDesc] = useState('');
   const [link, setLink] = useState('');
 
@@ -3332,15 +3333,56 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
     return `${hour}:${minute} ${period}`;
   };
   
+  // -----------------------------------------------
+  // FORMAT DATE RANGE: Builds a smart date/time
+  // string that handles same-day, overnight, and
+  // multi-day events cleanly.
+  //
+  // Examples:
+  //   Same day, no time:  "March 15, 2026"
+  //   Same day + times:   "March 15 · 9:00 PM – 11:30 PM"
+  //   Overnight:          "March 15, 9:00 PM – March 16, 2:00 AM"
+  //   Multi-day, no time: "March 15 – March 17"
+  // -----------------------------------------------
+  const formatDateRange = (startDate, startTime, endTime, endDate) => {
+    const startLabel = formatDate(startDate);
+
+    // No end info at all — just show the start date
+    if (!endDate && !endTime) return startLabel;
+
+    // Decide if we have a true end date that differs from the start
+    const hasEndDate = endDate && endDate !== startDate;
+
+    if (!hasEndDate) {
+      // Same day: show start date once, then times if present
+      if (startTime && endTime) {
+        return `${startLabel} · ${formatTime(startTime)} – ${formatTime(endTime)}`;
+      }
+      if (startTime) return `${startLabel} at ${formatTime(startTime)}`;
+      return startLabel;
+    }
+
+    // Different end date (overnight or multi-day)
+    const endLabel = formatDate(endDate);
+    if (startTime && endTime) {
+      // e.g. "March 15, 9:00 PM – March 16, 2:00 AM"
+      return `${startLabel}, ${formatTime(startTime)} – ${endLabel}, ${formatTime(endTime)}`;
+    }
+    if (startTime) {
+      return `${startLabel}, ${formatTime(startTime)} – ${endLabel}`;
+    }
+    // No times, just a date span: "March 15 – March 17"
+    return `${startLabel} – ${endLabel}`;
+  };
   // Edit event state — tracks which event is open for editing
   const [editingEvent, setEditingEvent] = useState(null); // the id of the event being edited
   const [editTitle, setEditTitle] = useState('');
   const [editDate, setEditDate] = useState('');
   const [editTime, setEditTime] = useState('');
   const [editEndTime, setEditEndTime] = useState('');
+  const [editEndDate, setEditEndDate] = useState('');   // end date for overnight/multi-day events
   const [editDesc, setEditDesc] = useState('');
   const [editLink, setEditLink] = useState('');
-
   // Delete confirmation — holds the id of the event waiting for confirmation.
   // Instead of a browser popup, we show an inline red warning card (consistent with app style).
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -3446,6 +3488,7 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
     setEditDate(event.date);
     setEditTime(event.time || '');
     setEditEndTime(event.endTime || '');
+    setEditEndDate(event.endDate || '');   // load existing end date if any
     setEditDesc(event.description || '');
     setEditLink(event.link || '');
   };
@@ -3453,7 +3496,7 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
   const cancelEdit = () => {
     setEditingEvent(null);
     setEditTitle(''); setEditDate(''); setEditTime('');
-    setEditEndTime(''); setEditDesc(''); setEditLink('');
+    setEditEndTime(''); setEditEndDate(''); setEditDesc(''); setEditLink('');
   };
 
   // saveEdit: finds the event in the array by id and replaces it with updated values
@@ -3462,9 +3505,14 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
       alert('Please enter event title and date');
       return;
     }
+    // Guard: end date can't be before start date
+    if (editEndDate && editEndDate < editDate) {
+      alert('End date cannot be before the start date.');
+      return;
+    }
     const updated = events.map(e =>
       e.id === editingEvent
-        ? { ...e, title: editTitle, date: editDate, time: editTime, endTime: editEndTime, description: editDesc, link: editLink }
+        ? { ...e, title: editTitle, date: editDate, time: editTime, endTime: editEndTime, endDate: editEndDate, description: editDesc, link: editLink }
         : e
     );
     setEvents(updated);
@@ -3479,13 +3527,19 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
       alert('Please enter event title and date');
       return;
     }
+    // Guard: end date can't be before start date
+    if (endDate && endDate < date) {
+      alert('End date cannot be before the start date.');
+      return;
+    }
     
     const newEvent = { 
       id: Date.now(),
       title, 
       date, 
       time: time || '',
-      endTime: endTime || '',   // Save end time (empty string if not filled in)
+      endTime: endTime || '',
+      endDate: endDate || '',   // blank if same-day event
       description: desc || '', 
       link: link || '',
       createdBy: profile.id,
@@ -3501,7 +3555,8 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
     setTitle(''); 
     setDate(''); 
     setTime('');
-    setEndTime('');  // Clear end time too
+    setEndTime('');
+    setEndDate('');   // clear end date too
     setDesc(''); 
     setLink(''); 
     setShowForm(null);
@@ -3580,7 +3635,7 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
               className="w-full p-2 border rounded mb-3 text-sm md:text-base" 
             />
 
-            {/* End time — completely optional, only shows in display if filled in */}
+            {/* End time + end date — both optional, shown together */}
             <label className="block text-xs text-gray-500 mb-1">
               End time (optional)
             </label>
@@ -3588,6 +3643,18 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
               type="time" 
               value={endTime} 
               onChange={(e) => setEndTime(e.target.value)} 
+              className="w-full p-2 border rounded mb-2 text-sm md:text-base" 
+            />
+            {/* End date only matters if event spans overnight or multiple days.
+                We show a subtle note so users understand what it's for. */}
+            <label className="block text-xs text-gray-500 mb-1">
+              End date <span className="text-gray-400">(optional — only needed for overnight or multi-day events)</span>
+            </label>
+            <input 
+              type="date" 
+              value={endDate}
+              min={date || undefined}   // can't end before it starts
+              onChange={(e) => setEndDate(e.target.value)} 
               className="w-full p-2 border rounded mb-2 text-sm md:text-base" 
             />
             <textarea 
@@ -3771,6 +3838,16 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
                         type="time"
                         value={editEndTime}
                         onChange={(ev) => setEditEndTime(ev.target.value)}
+                        className="w-full p-2 border rounded mb-2 text-sm"
+                      />
+                      <label className="block text-xs text-gray-500 mb-1">
+                        End date <span className="text-gray-400">(only for overnight or multi-day events)</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={editEndDate}
+                        min={editDate || undefined}
+                        onChange={(ev) => setEditEndDate(ev.target.value)}
                         className="w-full p-2 border rounded mb-3 text-sm"
                       />
                       <textarea
@@ -3841,9 +3918,7 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
                         </h3>
                         
                         <p className="text-xs md:text-sm text-gray-600 mb-1">
-                          {formatDate(e.date)}
-                          {e.time && ` at ${formatTime(e.time)}`}
-                          {e.time && e.endTime && ` – ${formatTime(e.endTime)}`}
+                          {formatDateRange(e.date, e.time, e.endTime, e.endDate)}
                         </p>
                         
                         <p className="text-xs text-purple-600">

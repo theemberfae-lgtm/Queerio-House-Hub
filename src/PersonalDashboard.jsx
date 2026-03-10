@@ -19,6 +19,23 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
     return `${hour}:${minute} ${period}`;
   };
 
+  // Builds a smart date/time string for same-day, overnight, and multi-day events
+  const formatDateRange = (startDate, startTime, endTime, endDate) => {
+    const fmt = (d) => new Date(d + 'T00:00:00').toLocaleDateString();
+    const startLabel = fmt(startDate);
+    if (!endDate && !endTime) return startLabel;
+    const hasEndDate = endDate && endDate !== startDate;
+    if (!hasEndDate) {
+      if (startTime && endTime) return `${startLabel} · ${formatTime(startTime)} – ${formatTime(endTime)}`;
+      if (startTime) return `${startLabel} at ${formatTime(startTime)}`;
+      return startLabel;
+    }
+    const endLabel = fmt(endDate);
+    if (startTime && endTime) return `${startLabel}, ${formatTime(startTime)} – ${endLabel}, ${formatTime(endTime)}`;
+    if (startTime) return `${startLabel}, ${formatTime(startTime)} – ${endLabel}`;
+    return `${startLabel} – ${endLabel}`;
+  };
+
   // Helper to format paid date
   const formatPaidDate = (paidDate) => {
     if (!paidDate) return 'Invalid Date';
@@ -292,9 +309,7 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
               >
                 <p className="font-semibold" style={{wordBreak: 'break-word'}}>{event.title}</p>
                 <p className="text-sm text-gray-600" style={{wordBreak: 'break-word'}}>
-                  {new Date(event.date + 'T00:00:00').toLocaleDateString()}
-                  {event.time && ` at ${formatTime(event.time)}`}
-                  {event.time && event.endTime && ` – ${formatTime(event.endTime)}`}
+                  {formatDateRange(event.date, event.time, event.endTime, event.endDate)}
                 </p>
               </div>
             ))}
