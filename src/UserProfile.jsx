@@ -238,6 +238,10 @@ const UserProfile = () => {
       // Manage birthday event based on privacy setting
       await manageBirthdayEvent(birthday, name, showBirthday);
       
+      // Force App.jsx to reload events/dashboard data so the new name
+      // shows up immediately on the Events tab and Dashboard.
+      if (onSave) onSave();
+      
       showMessage('✅ All changes saved!', 'success');
     } catch (e) {
       console.error('Failed to save:', e);

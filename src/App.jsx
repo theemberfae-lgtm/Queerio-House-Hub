@@ -311,7 +311,7 @@ const validateRotation = (rotation) => {
         </div>
 
         {activeTab === 'dashboard' && <PersonalDashboard bills={bills} items={items} events={events} oneOffTasks={oneOffTasks} />}
-        {activeTab === 'profile' && <UserProfile />}
+        {activeTab === 'profile' && <UserProfile onSave={loadData} />}
         {activeTab === 'roommates' && <RoommatesDirectory />}
         {activeTab === 'bills' && <Bills bills={bills} setBills={setBills} saveData={saveData} addActivity={addActivity} />}
         {activeTab === 'items' && (
