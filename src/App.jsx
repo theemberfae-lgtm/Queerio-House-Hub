@@ -3310,8 +3310,27 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  const [endTime, setEndTime] = useState(''); // Optional: when the event ends
   const [desc, setDesc] = useState('');
   const [link, setLink] = useState('');
+
+  // -----------------------------------------------
+  // FORMAT TIME: Converts "14:30" (24-hr/military)
+  // into "2:30 PM" (12-hr/AM-PM) for display.
+  // Browsers store <input type="time"> values in
+  // 24-hr format internally, so we always convert
+  // before showing it to the user.
+  // -----------------------------------------------
+  const formatTime = (timeString) => {
+    if (!timeString) return '';
+    const [hourStr, minuteStr] = timeString.split(':');
+    let hour = parseInt(hourStr, 10); // parseInt with base-10 is safest
+    const minute = minuteStr;
+    const period = hour >= 12 ? 'PM' : 'AM'; // 12:xx and above = PM
+    if (hour > 12) hour -= 12;   // Convert 13→1, 14→2, etc.
+    if (hour === 0) hour = 12;   // Midnight special case: 0 → 12 AM
+    return `${hour}:${minute} ${period}`;
+  };
   
   // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -3414,7 +3433,8 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
       id: Date.now(),
       title, 
       date, 
-      time: time || '', 
+      time: time || '',
+      endTime: endTime || '',   // Save end time (empty string if not filled in)
       description: desc || '', 
       link: link || '',
       createdBy: profile.id,
@@ -3429,7 +3449,8 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
     
     setTitle(''); 
     setDate(''); 
-    setTime(''); 
+    setTime('');
+    setEndTime('');  // Clear end time too
     setDesc(''); 
     setLink(''); 
     setShowForm(null);
@@ -3495,10 +3516,26 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
               onChange={(e) => setDate(e.target.value)} 
               className="w-full p-2 border rounded mb-2 text-sm md:text-base" 
             />
+
+            {/* Start time — label clarifies it uses AM/PM display */}
+            <label className="block text-xs text-gray-500 mb-1">
+              Start time (optional)
+            </label>
             <input 
               type="time" 
               value={time} 
               onChange={(e) => setTime(e.target.value)} 
+              className="w-full p-2 border rounded mb-3 text-sm md:text-base" 
+            />
+
+            {/* End time — completely optional, only shows in display if filled in */}
+            <label className="block text-xs text-gray-500 mb-1">
+              End time (optional)
+            </label>
+            <input 
+              type="time" 
+              value={endTime} 
+              onChange={(e) => setEndTime(e.target.value)} 
               className="w-full p-2 border rounded mb-2 text-sm md:text-base" 
             />
             <textarea 
@@ -3657,7 +3694,8 @@ const Events = ({ events, setEvents, saveData, addActivity, showForm, setShowFor
                       
                       <p className="text-xs md:text-sm text-gray-600 mb-1">
                         {formatDate(e.date)}
-                        {e.time && ` at ${e.time}`}
+                        {e.time && ` at ${formatTime(e.time)}`}
+                        {e.time && e.endTime && ` – ${formatTime(e.endTime)}`}
                       </p>
                       
                       <p className="text-xs text-purple-600">

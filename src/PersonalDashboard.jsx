@@ -7,6 +7,18 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
 
   if (!profile) return null;
 
+  // Converts "14:30" (24-hr) to "2:30 PM" (12-hr) for display
+  const formatTime = (timeString) => {
+    if (!timeString) return '';
+    const [hourStr, minuteStr] = timeString.split(':');
+    let hour = parseInt(hourStr, 10);
+    const minute = minuteStr;
+    const period = hour >= 12 ? 'PM' : 'AM';
+    if (hour > 12) hour -= 12;
+    if (hour === 0) hour = 12;
+    return `${hour}:${minute} ${period}`;
+  };
+
   // Helper to format paid date
   const formatPaidDate = (paidDate) => {
     if (!paidDate) return 'Invalid Date';
@@ -281,7 +293,8 @@ const PersonalDashboard = ({ bills, items, events, oneOffTasks }) => {
                 <p className="font-semibold" style={{wordBreak: 'break-word'}}>{event.title}</p>
                 <p className="text-sm text-gray-600" style={{wordBreak: 'break-word'}}>
                   {new Date(event.date + 'T00:00:00').toLocaleDateString()}
-                  {event.time && ` at ${event.time}`}
+                  {event.time && ` at ${formatTime(event.time)}`}
+                  {event.time && event.endTime && ` – ${formatTime(event.endTime)}`}
                 </p>
               </div>
             ))}

@@ -27,9 +27,14 @@ const AdminSettingsUnified = ({ onDataChange }) => {
   }, [isAdmin]);
 
   const loadInvites = async () => {
+    // Only fetch invites that haven't been used yet.
+    // Once someone accepts an invite, their profile exists independently —
+    // we don't need to keep showing the invite in the "Pending" list.
+    // The .eq('used', false) filter is what makes "Pending Invites" actually mean pending!
     const { data, error } = await supabase
       .from('invites')
       .select('*')
+      .eq('used', false)          // ← Only show invites that are still waiting to be accepted
       .order('created_at', { ascending: false });
     
     if (!error && data) {
@@ -399,7 +404,9 @@ const AdminSettingsUnified = ({ onDataChange }) => {
             </h3>
             
             {invites.length === 0 ? (
-              <p className="text-gray-500 text-center text-sm">No pending invites</p>
+              // This message now accurately means "no one is waiting to accept"
+              // (accepted invites are filtered out, so 0 really does mean 0 pending)
+              <p className="text-gray-500 text-center text-sm">No pending invites — all invites have been accepted! 🎉</p>
             ) : (
               <div className="space-y-2">
                 {invites.map(invite => (
